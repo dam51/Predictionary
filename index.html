@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Predictionary">
+<meta name="theme-color" content="#faf7f2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Predictionary</title>
+<style>
+  :root { --bg: #faf7f2; --ink: #222; --muted: #7a746b; --accent: #6b4eff; --card: #fff; --line: #eee8df; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: Georgia, serif; min-height: 100vh; }
+  header { padding: calc(env(safe-area-inset-top) + .75rem) 1.25rem .5rem; display: flex; align-items: flex-start;
+           justify-content: space-between; gap: 1rem; }
+  .lang { display: flex; border: 1px solid var(--accent); border-radius: 9px; overflow: hidden; flex-shrink: 0;
+          margin-top: .35rem; }
+  .lang button { border: 0; background: #fff; color: var(--accent); padding: .35rem .6rem;
+                 font: 600 .8rem -apple-system, system-ui, sans-serif; }
+  .lang button.on { background: var(--accent); color: #fff; }
+  .tag { font: 600 .65rem -apple-system, system-ui, sans-serif; color: var(--muted); border: 1px solid var(--line);
+         border-radius: 4px; padding: 0 .25rem; margin-left: .4rem; vertical-align: middle; }
+  h1 { margin: 0; font-size: 1.9rem; }
+  header p { margin: .1rem 0 0; color: var(--muted); font-style: italic; font-size: .9rem; }
+  main { padding: .5rem 1rem calc(env(safe-area-inset-bottom) + 5.5rem); }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .card { background: var(--card); border-radius: 14px; padding: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  label { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem 0;
+          font: .95rem -apple-system, system-ui, sans-serif; color: var(--muted); border-bottom: 1px solid var(--line); }
+  input, select { font: 16px -apple-system, system-ui, sans-serif; padding: .4rem .5rem; border: 1px solid #ddd;
+                  border-radius: 8px; background: #fff; color: var(--ink); }
+  input[type=number] { width: 4.5rem; text-align: right; }
+  #concept, #define-word { width: 100%; margin-bottom: .75rem; }
+  button.go { width: 100%; background: var(--accent); color: #fff; border: 0; border-radius: 12px; padding: .9rem;
+              font: 600 1.05rem -apple-system, system-ui, sans-serif; margin-top: .75rem; }
+  button.go:disabled { opacity: .5; }
+  button.go:active { transform: scale(.98); }
+  .hint { color: var(--muted); font: .9rem -apple-system, system-ui, sans-serif; margin: .25rem 0 .75rem; }
+  ol { list-style: none; padding: 0; margin: 1rem 0 0; }
+  li.entry { background: var(--card); border-radius: 14px; padding: .9rem 1rem; margin-bottom: .75rem;
+             box-shadow: 0 1px 4px rgba(0,0,0,.07); display: grid; grid-template-columns: 1fr auto; gap: .75rem; }
+  li.hint { text-align: center; }
+  .word { font-size: 1.45rem; font-weight: bold; word-break: break-word; }
+  #predict-out .word { font-size: 2rem; }
+  .predict-row { display: flex; gap: .5rem; }
+  .predict-row button.go { flex: 1; width: auto; }
+  button.step { margin-top: .75rem; padding: 0 .9rem; border: 1px solid var(--accent); border-radius: 12px;
+                background: #fff; color: var(--accent); font: 600 .95rem -apple-system, system-ui, sans-serif; }
+  button.step:disabled { opacity: .35; }
+  .pos { font: italic .95rem Georgia, serif; color: var(--muted); margin-left: .4rem; font-weight: normal; }
+  .def { font-style: italic; margin-top: .15rem; }
+  .def[contenteditable] { outline: none; border-bottom: 1px dashed var(--line); }
+  .def[contenteditable]:empty::before { content: attr(data-ph); color: #bbb; }
+  .example { margin: .5rem 0 .25rem; }
+  .example::before { content: "\201C"; }
+  .example::after { content: "\201D"; }
+  .entry:lang(fr) .example::before { content: "\AB\A0"; }
+  .entry:lang(fr) .example::after { content: "\A0\BB"; }
+  .recipe { font: .78rem ui-monospace, Menlo, monospace; color: var(--muted); margin-top: .3rem; }
+  .side { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
+  .bar { height: 4px; background: #eee; border-radius: 2px; width: 3.5rem; }
+  .bar > div { height: 100%; background: var(--accent); border-radius: 2px; }
+  .icon-btn { background: none; border: 0; font-size: 1.5rem; padding: 0; color: #ccc; line-height: 1; }
+  .icon-btn.on { color: #f5a623; }
+  .share { font-size: 1.1rem; color: var(--accent); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: rgba(250,247,242,.92);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+        padding-bottom: env(safe-area-inset-bottom); }
+  nav button { flex: 1; background: none; border: 0; padding: .55rem 0 .45rem; color: var(--muted);
+               font: .72rem -apple-system, system-ui, sans-serif; }
+  nav button span { display: block; font-size: 1.35rem; margin-bottom: .1rem; }
+  nav button em { font-style: normal; }
+  nav button.active { color: var(--accent); }
+  #status { text-align: center; }
+  li.hint a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Predictionary</h1>
+    <p data-i18n="tagline">a dictionary of words that don't exist yet</p>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <button data-lang="en" class="on">EN</button>
+    <button data-lang="fr">FR</button>
+  </div>
+</header>
+
+<main>
+  <p class="hint" id="status">Learning English…</p>
+
+  <section class="tab active" id="tab-predict">
+    <div class="predict-row">
+      <button class="step" id="predict-prev" disabled data-i18n="prev">‹ Previous</button>
+      <button class="go" id="predict-go" disabled data-i18n="predict">Predict a word</button>
+      <button class="step" id="predict-next" disabled data-i18n="next">Next ›</button>
+    </div>
+    <ol id="predict-out"></ol>
+  </section>
+
+  <section class="tab" id="tab-invent">
+    <div class="card">
+      <label><span data-i18n="howMany">How many</span> <input id="n" type="number" value="10" min="1" max="50" inputmode="numeric"></label>
+      <label><span data-i18n="shortest">Shortest</span> <input id="min" type="number" value="5" min="3" max="20" inputmode="numeric"></label>
+      <label><span data-i18n="longest">Longest</span> <input id="max" type="number" value="10" min="3" max="24" inputmode="numeric"></label>
+      <label><span data-i18n="startsWith">Starts with</span> <input id="start" maxlength="10" size="8" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label><span data-i18n="creativity">Creativity</span>
+        <select id="creativity">
+          <option value="tame" data-i18n="tame">tame</option>
+          <option value="balanced" selected data-i18n="balanced">balanced</option>
+          <option value="wild" data-i18n="wild">wild</option>
+        </select>
+      </label>
+      <button class="go" id="invent-go" disabled data-i18n="invent">Invent</button>
+    </div>
+    <ol id="invent-out"></ol>
+  </section>
+
+  <section class="tab" id="tab-coin">
+    <div class="card">
+      <p class="hint" data-i18n="coinHint">Describe a concept, get candidate words for it. Try "fear of meetings" or "love of coffee".</p>
+      <input id="concept" maxlength="200" placeholder="a concept that needs a word" enterkeyhint="go">
+      <button class="go" id="coin-go" disabled data-i18n="coin">Coin</button>
+    </div>
+    <ol id="coin-out"></ol>
+  </section>
+
+  <section class="tab" id="tab-define">
+    <div class="card">
+      <p class="hint" data-i18n="defineHint">Type a word that doesn't exist and find out what it means.</p>
+      <input id="define-word" maxlength="30" placeholder="a made-up word" enterkeyhint="go"
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="go" id="define-go" disabled data-i18n="define">Define</button>
+    </div>
+    <ol id="define-out"></ol>
+  </section>
+
+  <section class="tab" id="tab-saved">
+    <ol id="saved"></ol>
+    <button class="go" id="export" data-i18n="export">Export as JSON</button>
+  </section>
+</main>
+
+<nav>
+  <button data-tab="predict" class="active"><span>✨</span><em data-i18n="navPredict">Predict</em></button>
+  <button data-tab="invent"><span>🎲</span><em data-i18n="navInvent">Invent</em></button>
+  <button data-tab="coin"><span>🪙</span><em data-i18n="navCoin">Coin</em></button>
+  <button data-tab="define"><span>🔍</span><em data-i18n="navDefine">Define</em></button>
+  <button data-tab="saved"><span>★</span><em id="nav-saved">Saved</em></button>
+</nav>
+
+<script src="engine.js"></script>
+<script src="lang-fr.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'predictionary.saved';
+let saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+let engine = null;
+const LANG_KEY = 'predictionary.lang';
+const knownKey = lang => (lang === 'en' ? 'predictionary.known' : `predictionary.known.${lang}`);
+const checked = new Map(); // "lang:word" -> exists on Wiktionary
+const LISTS = { en: ['words.txt', 'common.txt'], fr: ['words-fr.txt', 'common-fr.txt', 'lemmas-fr.txt'] };
+const LETTERS = { en: /[^a-z]/g, fr: /[^a-zàâäçéèêëîïôöùûüÿœæ]/g };
+
+const STRINGS = {
+  en: {
+    tagline: "a dictionary of words that don't exist yet", loading: 'Learning English…',
+    prev: '‹ Previous', next: 'Next ›', predict: 'Predict a word', howMany: 'How many', shortest: 'Shortest',
+    longest: 'Longest', startsWith: 'Starts with', creativity: 'Creativity', tame: 'tame', balanced: 'balanced',
+    wild: 'wild', invent: 'Invent', coinHint: 'Describe a concept, get candidate words for it. Try "fear of meetings" or "love of coffee".',
+    conceptPh: 'a concept that needs a word', coin: 'Coin', export: 'Export as JSON', navPredict: 'Predict',
+    navInvent: 'Invent', navCoin: 'Coin', navSaved: 'Saved', savedEmpty: 'Tap ★ on a word to keep it here.',
+    checking: 'Checking the word is really new…', allExisted: 'Every candidate already existed. Try again!',
+    inventEmpty: 'Nothing new found. Loosen the length or "starts with".',
+    coinEmpty: 'No candidates. Use two or more ideas, e.g. "fear of meetings".',
+    offline: "Couldn't reach Wiktionary, so these were checked against the built-in word list only.",
+    loadError: 'Could not load the word list ({e}).', writeDef: 'tap to write a definition',
+    sounds: 'sounds {n}% English', save: 'Save', share: 'Share',
+    navDefine: 'Define', define: 'Define', defineHint: "Type a word that doesn't exist and find out what it means.",
+    definePh: 'a made-up word', defineEmpty: 'Type a word first.', realWord: '“{w}” is already a real word.',
+    lookUp: 'See it on Wiktionary',
+  },
+  fr: {
+    tagline: "un dictionnaire des mots qui n'existent pas encore", loading: "J'apprends le français…",
+    prev: '‹ Précédent', next: 'Suivant ›', predict: 'Prédire un mot', howMany: 'Combien', shortest: 'Le plus court',
+    longest: 'Le plus long', startsWith: 'Commence par', creativity: 'Créativité', tame: 'sage', balanced: 'équilibrée',
+    wild: 'débridée', invent: 'Inventer',
+    coinHint: "Décrivez une idée, obtenez des mots pour la nommer. Essayez « la peur des réunions » ou « l'amour du café ».",
+    conceptPh: 'une idée qui mérite un mot', coin: 'Forger', export: 'Exporter en JSON', navPredict: 'Prédire',
+    navInvent: 'Inventer', navCoin: 'Forger', navSaved: 'Favoris', savedEmpty: 'Touchez ★ sur un mot pour le garder ici.',
+    checking: 'Je vérifie que le mot est vraiment nouveau…', allExisted: 'Tous les candidats existaient déjà. Réessayez !',
+    inventEmpty: 'Rien de nouveau. Élargissez la longueur ou « Commence par ».',
+    coinEmpty: 'Aucun candidat. Utilisez au moins deux idées, par exemple « la peur des réunions ».',
+    offline: 'Wiktionnaire injoignable : vérification faite avec la liste de mots intégrée uniquement.',
+    loadError: 'Impossible de charger la liste de mots ({e}).', writeDef: 'touchez pour écrire une définition',
+    sounds: 'sonne français à {n} %', save: 'Garder', share: 'Partager',
+    navDefine: 'Définir', define: 'Définir', defineHint: "Tapez un mot qui n'existe pas et découvrez ce qu'il veut dire.",
+    definePh: 'un mot inventé', defineEmpty: "Tapez d'abord un mot.", realWord: '« {w} » est déjà un vrai mot.',
+    lookUp: 'Le voir sur le Wiktionnaire',
+  },
+};
+let lang = localStorage.getItem(LANG_KEY) || ((navigator.language || '').startsWith('fr') ? 'fr' : 'en');
+const t = key => STRINGS[lang][key];
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+const store = () => localStorage.setItem(KEY, JSON.stringify(saved));
+const langOf = x => x.lang || 'en'; // words saved before French existed are English
+const isSaved = x => saved.some(s => s.word === x.word && langOf(s) === langOf(x));
+const shareText = x => [`${x.word}${x.pos ? ` (${x.pos})` : ''}`, x.definition, x.example && `"${x.example}"`]
+  .filter(Boolean).join('\n');
+
+function row(x, editable) {
+  const li = el('li', 'entry');
+  li.lang = langOf(x);
+  const body = el('div');
+  const word = el('div', 'word', x.word);
+  if (x.pos) word.append(el('span', 'pos', x.pos));
+  if (editable) word.append(el('span', 'tag', langOf(x).toUpperCase()));
+  body.append(word);
+  const def = el('div', 'def', x.definition);
+  if (editable) {
+    def.contentEditable = 'true';
+    def.dataset.ph = t('writeDef');
+    def.onblur = () => { x.definition = def.textContent.trim(); store(); };
+  }
+  body.append(def);
+  if (x.example) body.append(el('div', 'example', x.example));
+  if (x.recipe) body.append(el('div', 'recipe', x.recipe));
+
+  const side = el('div', 'side');
+  const star = el('button', 'icon-btn', '★');
+  star.classList.toggle('on', isSaved(x));
+  star.setAttribute('aria-label', t('save'));
+  star.onclick = () => { toggle(x); star.classList.toggle('on', isSaved(x)); };
+  side.append(star);
+  if (navigator.share) {
+    const share = el('button', 'icon-btn share', '⤴');
+    share.setAttribute('aria-label', t('share'));
+    share.onclick = () => navigator.share({ text: shareText(x) }).catch(() => {});
+    side.append(share);
+  }
+  const bar = el('div', 'bar');
+  const fill = el('div');
+  fill.style.width = x.plausibility + '%';
+  bar.append(fill);
+  bar.title = STRINGS[langOf(x)].sounds.replace('{n}', x.plausibility);
+  side.append(bar);
+
+  li.append(body, side);
+  return li;
+}
+
+function render(list, entries, emptyMsg, editable = false, note = '') {
+  list.replaceChildren();
+  if (!entries.length) { list.append(el('li', 'hint', emptyMsg)); return; }
+  for (const x of entries) list.append(row(x, editable));
+  if (note) list.append(el('li', 'hint', note));
+}
+
+function toggle(x) {
+  saved = isSaved(x)
+    ? saved.filter(s => !(s.word === x.word && langOf(s) === langOf(x)))
+    : [...saved, { ...x, saved: new Date().toISOString() }];
+  store();
+  renderSaved();
+}
+
+function renderSaved() {
+  $('nav-saved').textContent = `${t('navSaved')} (${saved.length})`;
+  const sorted = [...saved].sort((a, b) => a.word.localeCompare(b.word));
+  render($('saved'), sorted, t('savedEmpty'), true);
+}
+
+document.querySelectorAll('nav button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === `tab-${b.dataset.tab}`));
+  };
+});
+
+const num = (id, lo, hi, dflt) => Math.max(lo, Math.min(hi, parseInt($(id).value, 10) || dflt));
+const wiktionary = l => `https://${l}.wiktionary.org/w/api.php?action=query&format=json&formatversion=2&origin=*&titles=`;
+
+/** Ask Wiktionary (50 titles per request) which words already have a page. Returns { exists: Set, offline: bool }. */
+async function checkOnline(words, l) {
+  let offline = false;
+  const todo = [...new Set(words.filter(w => !checked.has(`${l}:${w}`)))];
+  for (let i = 0; i < todo.length; i += 50) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 5000);
+    try {
+      const r = await fetch(wiktionary(l) + encodeURIComponent(todo.slice(i, i + 50).join('|')), { signal: ctl.signal });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      for (const page of (await r.json()).query.pages) checked.set(`${l}:${page.title}`, !page.missing && !page.invalid);
+    } catch {
+      offline = true;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  const exists = new Set(words.filter(w => checked.get(`${l}:${w}`)));
+  if (exists.size) {
+    engine.addKnown(exists);
+    const known = new Set([...JSON.parse(localStorage.getItem(knownKey(l)) || '[]'), ...exists]);
+    localStorage.setItem(knownKey(l), JSON.stringify([...known].slice(-5000)));
+  }
+  return { exists, offline };
+}
+
+/** Keep only entries that are new according to Wiktionary too, tagged with their language. */
+async function onlyNew(entries, n) {
+  const l = lang;
+  const { exists, offline } = await checkOnline(entries.map(x => x.word), l);
+  return { fresh: entries.filter(x => !exists.has(x.word)).slice(0, n).map(x => ({ ...x, lang: l })), offline };
+}
+
+function busy(list, on) {
+  if (on) list.replaceChildren(el('li', 'hint', t('checking')));
+  document.querySelectorAll('button.go').forEach(b => { b.disabled = on; });
+}
+
+const predictions = { en: { list: [], shown: -1 }, fr: { list: [], shown: -1 } };
+const hist = () => predictions[lang];
+
+function updateSteps(disable = false) {
+  $('predict-prev').disabled = disable || hist().shown <= 0;
+  $('predict-next').disabled = disable || hist().shown >= hist().list.length - 1;
+}
+
+function showPredicted(note = '') {
+  const h = hist();
+  if (h.shown < 0) $('predict-out').replaceChildren();
+  else render($('predict-out'), [h.list[h.shown]], '', false, note);
+  updateSteps();
+}
+
+$('predict-go').onclick = async () => {
+  const out = $('predict-out');
+  busy(out, true);
+  updateSteps(true);
+  let result = { fresh: [], offline: false };
+  for (let i = 0; i < 6 && !result.fresh.length; i++) result = await onlyNew([engine.predict()], 1);
+  busy(out, false);
+  if (!result.fresh.length) {
+    render(out, [], t('allExisted'));
+    updateSteps();
+    return;
+  }
+  const h = hist();
+  h.list.push(result.fresh[0]);
+  if (h.list.length > 50) h.list.shift();
+  h.shown = h.list.length - 1;
+  showPredicted(result.offline ? t('offline') : '');
+};
+
+$('predict-prev').onclick = () => { hist().shown -= 1; showPredicted(); };
+$('predict-next').onclick = () => { hist().shown += 1; showPredicted(); };
+
+$('invent-go').onclick = async () => {
+  const out = $('invent-out');
+  const n = num('n', 1, 50, 10);
+  const min = num('min', 3, 20, 5);
+  const start = $('start').value.toLowerCase().replace(LETTERS[lang], '').slice(0, 10);
+  busy(out, true);
+  const { fresh, offline } = await onlyNew(
+    engine.invent(n * 2, min, num('max', min, 24, 10), start, $('creativity').value), n);
+  busy(out, false);
+  render(out, fresh, t('inventEmpty'), false, offline ? t('offline') : '');
+};
+
+const coin = async () => {
+  const out = $('coin-out');
+  $('concept').blur();
+  busy(out, true);
+  const { fresh, offline } = await onlyNew(engine.coin($('concept').value.slice(0, 200), 24), 12);
+  busy(out, false);
+  render(out, fresh, t('coinEmpty'), false, offline ? t('offline') : '');
+};
+$('coin-go').onclick = coin;
+$('concept').onkeydown = e => { if (e.key === 'Enter') coin(); };
+
+const define = async () => {
+  const out = $('define-out');
+  const w = $('define-word').value.trim().toLowerCase().replace(LETTERS[lang], '').slice(0, 30);
+  $('define-word').blur();
+  if (!w) { render(out, [], t('defineEmpty')); return; }
+  busy(out, true);
+  const l = lang;
+  const { exists, offline } = engine.isKnown(w) ? { exists: new Set([w]), offline: false } : await checkOnline([w], l);
+  busy(out, false);
+  if (exists.has(w)) {
+    const li = el('li', 'hint', `${t('realWord').replace('{w}', w)} `);
+    const link = el('a', '', t('lookUp'));
+    link.href = `https://${l}.wiktionary.org/wiki/${encodeURIComponent(w)}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    li.append(link);
+    out.replaceChildren(li);
+    return;
+  }
+  const entry = { word: w, plausibility: engine.plausibility(w), ...engine.explain(w), lang: l };
+  render(out, [entry], '', false, offline ? t('offline') : '');
+};
+$('define-go').onclick = define;
+$('define-word').onkeydown = e => { if (e.key === 'Enter') define(); };
+
+$('export').onclick = async () => {
+  const json = JSON.stringify(saved, null, 2);
+  const file = new File([json], 'predictionary.json', { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file] }).catch(() => {});
+    return;
+  }
+  const a = el('a');
+  a.href = URL.createObjectURL(file);
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+const lines = file => fetch(file)
+  .then(r => { if (!r.ok) throw new Error(`${file}: HTTP ${r.status}`); return r.text(); })
+  .then(text => text.split('\n').filter(Boolean));
+
+const engines = {}; // lang -> Promise<Predictionary>, built the first time that language is used
+function loadEngine(l) {
+  engines[l] = engines[l] || Promise.all(LISTS[l].map(lines))
+    .then(lists => new Promise(resolve => setTimeout(() => resolve(lists), 30))) // let "Learning…" paint first
+    .then(([words, common, train]) => {
+      const e = new Predictionary(words, common, l, train || words);
+      e.addKnown(JSON.parse(localStorage.getItem(knownKey(l)) || '[]'));
+      return e;
+    });
+  return engines[l];
+}
+
+function applyStrings() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
+  $('concept').placeholder = t('conceptPh');
+  $('define-word').placeholder = t('definePh');
+  document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+}
+
+async function setLang(l) {
+  lang = l;
+  localStorage.setItem(LANG_KEY, l);
+  applyStrings();
+  renderSaved();
+  $('invent-out').replaceChildren();
+  $('coin-out').replaceChildren();
+  $('define-out').replaceChildren();
+  showPredicted();
+  document.querySelectorAll('button.go:not(#export)').forEach(b => { b.disabled = true; });
+  updateSteps(true);
+  const status = el('p', 'hint', t('loading'));
+  status.id = 'status';
+  const old = $('status');
+  if (old) old.replaceWith(status);
+  else $('tab-predict').before(status);
+  try {
+    const e = await loadEngine(l);
+    if (lang !== l) return; // switched again while loading
+    engine = e;
+    status.remove();
+    document.querySelectorAll('button.go').forEach(b => { b.disabled = false; });
+    updateSteps();
+  } catch (err) {
+    status.textContent = t('loadError').replace('{e}', err.message);
+  }
+}
+
+document.querySelectorAll('.lang button').forEach(b => { b.onclick = () => { if (b.dataset.lang !== lang) setLang(b.dataset.lang); }; });
+setLang(lang);
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

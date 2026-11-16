@@ -1,0 +1,8 @@
+words-fr.txt, lemmas-fr.txt and common-fr.txt are derived from Lexique 3.83
+(New, Pallier et al., http://www.lexique.org), licensed CC BY-SA 4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes: lowercase words of 3-20 letters without hyphens or apostrophes. words-fr.txt keeps every
+spelling; lemmas-fr.txt keeps the headwords of nouns, adjectives, verbs and adverbs; common-fr.txt
+keeps those headwords with a film or book frequency of at least 1 per million.
+These derived files are shared under the same CC BY-SA 4.0 licence.
