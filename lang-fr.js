@@ -591,7 +591,7 @@
         { t: 'un pays où les {0s:x} font la loi', a: LIVING }, 'un village où chaque maison a la forme {dun:x}'] },
       { form: 'ette', pos: 'n.f.', gloss: ['{un:x} tout{e:x} petit{e:x}', { t: 'un bébé {0:x} qui tient dans la main', a: LIVING },
         "{un:x} pas plus grand{e:x} qu'une coccinelle"] },
-      { form: 'ounet', pos: 'n.m.', gloss: ['un petit surnom tout doux pour {un:x}', "{un:x} si craquant{e:x} qu'on a envie de lui faire un bisou"] },
+      { form: 'ounet', pos: 'n.m.', gloss: [{ t: 'un petit surnom tout doux pour {un:x}', a: ['animal', 'character', 'thing', 'food'] }, "{un:x} si craquant{e:x} qu'on a envie de lui faire un bisou"] },
       { form: 'nado', pos: 'n.f.', gloss: ['un tourbillon de {0s:x} qui fait le tour de la cour de récré',
         { t: 'un orage où il pleut des {0s:x}', a: ['food', 'thing'] }, { t: 'une danse qui fait tourner la tête, inventée par des {0s:x}', a: LIVING }] },
       { form: 'ologie', pos: 'n.f.', gloss: ['la très importante science des {0s:x}', "une matière à l'école qui ne parle que de {0s:x}"] },
@@ -606,7 +606,7 @@
       { form: 'turbo', gloss: ['{un:x} qui file à toute vitesse', '{un:x} avec un moteur de fusée'] },
     ],
     mixes: [
-      'ce qui arrive quand {a} rencontre {b}', '{un:b} qui se prend pour {un:a}', 'le jour où {b} et {a} sont devenus amis',
+      'ce qui arrive quand {a} rencontre {b}', '{un:b} qui se prend pour {un:a}', 'le jour où {b} est devenu{e:b} ami{e:b} avec {un:a}',
       { t: '{un:b} qui ne mange que des {0s:a}', a: ['food'], b: LIVING },
       { t: '{un:b} qui transforme tout en {0s:a}', a: ['food', 'thing', 'weather'], b: LIVING },
       { t: '{un:b} où tout le monde se déguise en {0:a}', a: LIVING, b: ['event'] },

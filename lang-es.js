@@ -590,7 +590,7 @@
         { t: 'un país donde mandan {0s:x}', a: LIVING }, 'un pueblo donde cada casa tiene forma {d0:x}'] },
       { form: 'ito', fem: 'ita', pos: 'n.m.', posFem: 'n.f.', gloss: ['{un:x} chiquitit{o:x}',
         { t: 'un bebé {0:x} que cabe en la mano', a: LIVING }, '{un:x} tan pequeñ{o:x} como una mariquita'] },
-      { form: 'ete', pos: 'n.m.', gloss: ['un apodo cariñoso para {un:x}', '{un:x} tan adorable que todos quieren abrazarl{o:x}'] },
+      { form: 'ete', pos: 'n.m.', gloss: [{ t: 'un apodo cariñoso para {un:x}', a: ['animal', 'character', 'thing', 'food'] }, '{un:x} tan adorable que todos quieren abrazarl{o:x}'] },
       { form: 'nado', pos: 'n.m.', gloss: ['un remolino de {0s:x} que da vueltas por el patio',
         { t: 'una tormenta en la que llueven {0s:x}', a: ['food', 'thing'] }, { t: 'un baile que marea, inventado por {0s:x}', a: LIVING }] },
       { form: 'ología', pos: 'n.f.', gloss: ['la ciencia importantísima {de:x}', 'una asignatura del cole que solo habla {de:x}'] },
@@ -604,7 +604,7 @@
       { form: 'turbo', gloss: ['{un:x} que va a toda velocidad', '{un:x} con motor de cohete'] },
     ],
     mixes: [
-      'lo que pasa cuando {a} se encuentra con {b}', '{un:b} que se cree {un:a}', 'el día en que {b} y {a} se hicieron amigos',
+      'lo que pasa cuando {a} se encuentra con {b}', '{un:b} que se cree {un:a}', 'el día en que {b} se hizo amig{o:b} {dun:a}',
       { t: '{un:b} que solo come {0s:a}', a: ['food'], b: LIVING },
       { t: '{un:b} que lo convierte todo en {0s:a}', a: ['food', 'thing', 'weather'], b: LIVING },
       { t: '{un:b} donde todos se disfrazan de {0:a}', a: LIVING, b: ['event'] },

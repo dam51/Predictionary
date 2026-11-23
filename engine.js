@@ -668,7 +668,7 @@ const CHILDREN = {
       { t: 'as wobbly as {x}', a: ['food'] }] },
     { form: 'nado', pos: 'n.', gloss: ['a whirlwind of {s:x} that spins round the playground',
       { t: 'a storm where it rains {s:x}', a: ['food', 'thing'] }, { t: 'a twirly dance that makes you dizzy, invented by {s:x}', a: LIVING }] },
-    { form: 'kins', pos: 'n.', gloss: ['a cuddly nickname for {x}', 'the cutest {0:x} in the whole world'] },
+    { form: 'kins', pos: 'n.', gloss: [{ t: 'a cuddly nickname for {x}', a: ['animal', 'character', 'thing', 'food'] }, 'the cutest {0:x} in the whole world'] },
     { form: 'pop', pos: 'n.', gloss: [{ t: 'a lollipop that tastes of {0:x}', a: ['food', 'weather'] }, 'a lollipop shaped like {x}'] },
     { form: 'ology', pos: 'n.', gloss: ['the very important science of {s:x}', 'a school subject all about {s:x}'] },
   ],
