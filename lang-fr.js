@@ -30,10 +30,15 @@
     : ELIDE.test(s) ? `d'${s}` : `de ${s}`);
   const a = s => (s.startsWith('le ') ? `au ${s.slice(3)}` : s.startsWith('les ') ? `aux ${s.slice(4)}` : `à ${s}`);
 
+  // {un:x} "une sieste", {dun:x} "d'une sieste": indefinite forms of a noun phrase.
+  const un = x => `${x.pl ? 'des' : x.g === 'f' ? 'une' : 'un'} ${render({ ...x, art: '' })}`;
+
   function fill(tpl, x, key = 'x') {
     const s = typeof x === 'string' ? x : render(x);
     const bare = typeof x === 'string' ? x.replace(/^(le |la |les |l')/, '') : render({ ...x, art: '' });
+    const indef = typeof x === 'string' ? x : un(x);
     return tpl.replaceAll(`{de:${key}}`, de(s)).replaceAll(`{a:${key}}`, a(s))
+      .replaceAll(`{un:${key}}`, indef).replaceAll(`{dun:${key}}`, x.pl ? `de ${bare}` : de(indef))
       .replaceAll(`{d0:${key}}`, de(bare)).replaceAll(`{0:${key}}`, bare).replaceAll(`{${key}}`, s);
   }
 
@@ -84,7 +89,6 @@
     root('nécr', 'o', np('les', 'morts', 'm', true), adj('posthume'), 'mort'),
     root('anthrop', 'o', np('les', 'humains', 'm', true), adj('humain', 'humaine'), 'humain gens personne'),
     root('dém', 'o', np('le', 'peuple', 'm'), adj('populaire'), 'peuple foule public'),
-    root('péd', 'o', np('les', 'enfants', 'm', true), adj('enfantin', 'enfantine'), 'enfant'),
     root('gér', 'o', np('la', 'vieillesse', 'f'), adj('âgé', 'âgée'), 'vieux vieille vieillesse âgé'),
     root('cardi', 'o', np('le', 'cœur', 'm'), adj('cardiaque'), 'cœur coeur'),
     root('céphal', 'o', np('la', 'tête', 'f'), adj('cérébral', 'cérébrale'), 'tête'),
@@ -313,13 +317,13 @@
 
   const recent = [];
 
-  function example(key, w, core) {
+  function example(key, w, core, pos) {
     const all = EXAMPLES[key];
     const fresh = all.filter(t => !recent.includes(t));
     const t = pick(fresh.length ? fresh : all);
     recent.push(t);
     if (recent.length > 12) recent.shift();
-    const fem = POS[key] === 'n.f.';
+    const fem = (pos || POS[key]) === 'n.f.';
     const le = ELIDE.test(w) ? `l'${w}` : `${fem ? 'la' : 'le'} ${w}`;
     const who = pick(WHO);
     return fill(t, core)
@@ -327,8 +331,52 @@
       .replaceAll('{de:w}', de(le)).replaceAll('{a:w}', a(le)).replaceAll('{d:w}', de(w)).replaceAll('{w}', w)
       .replaceAll('{Who}', who).replaceAll('{who}', lowerFirst(who))
       .replaceAll('{where}', pick(WHERE)).replaceAll('{When}', pick(WHEN))
-      .replace(/\b([Qq]u|[Dd])e (?=[aeiouyàâéèêîôûœ])/g, "$1'"); // "que un pilote" -> "qu'un pilote"
+      .replace(/(^|\s)([Qq]u|[Dd])e (?=[aeiouyàâéèêîôûœ])/g, "$1$2'"); // "que un pilote" -> "qu'un pilote"
   }
+
+  // Everyday style. [word, article, noun, gender, is an event]
+  const EVERYDAY_WORDS = [
+    ['lundi', 'le', 'm', 1], ['sieste', 'la', 'f', 1], ['canapé', 'le', 'm'], ['réunion', 'la', 'f', 1],
+    ['chaussette', 'la', 'f'], ['parapluie', 'le', 'm'], ['sandwich', 'le', 'm'], ['playlist', 'la', 'f'],
+    ['selfie', 'le', 'm'], ['chat', 'le', 'm'], ['pizza', 'la', 'f'], ['café', 'le', 'm'], ['nuage', 'le', 'm'],
+    ['flaque', 'la', 'f'], ['métro', 'le', 'm'], ['apéro', 'le', 'm', 1], ['oreiller', 'le', 'm'], ['goûter', 'le', 'm', 1],
+    ['batterie', 'la', 'f'], ['podcast', 'le', 'm'], ['croissant', 'le', 'm'], ['mème', 'le', 'm'], ['câlin', 'le', 'm'],
+    ['bruine', 'la', 'f', 1], ['dimanche', 'le', 'm', 1], ['biscuit', 'le', 'm'], ['karaoké', 'le', 'm', 1],
+    ['frigo', 'le', 'm'], ['bus', 'le', 'm'], ['potin', 'le', 'm'], ['lessive', 'la', 'f'], ['boulot', 'le', 'm'],
+    ['bouchon', 'le', 'm', 1], ['raclette', 'la', 'f', 1], ['baguette', 'la', 'f'], ['grève', 'la', 'f', 1],
+    ['tableur', 'le', 'm'], ['courriel', 'le', 'm'], ['plaid', 'le', 'm'], ['trottinette', 'la', 'f'],
+  ];
+  const EVERYDAY = {
+    words: EVERYDAY_WORDS.map(([w, art, g, event]) => ({ w, x: np(art, w, g), event: !!event })),
+    suffixes: [
+      { form: 'esque', pos: 'adj.', gloss: "qui a toute l'énergie {dun:x}" },
+      { form: 'ette', pos: 'n.f.', gloss: 'une toute petite version {dun:x}' },
+      { form: 'ade', pos: 'n.f.', gloss: "une grande fête en l'honneur {de:x}" },
+      { form: 'iste', pos: 'n.m.', gloss: "quelqu'un qui ne vit que pour {x}" },
+      { form: 'ifier', pos: 'v.', gloss: "transformer n'importe quoi en {0:x}" },
+      { form: 'erie', pos: 'n.f.', gloss: 'une boutique entièrement consacrée {a:x}' },
+      { form: 'core', pos: 'n.m.', gloss: 'une esthétique entièrement construite autour {de:x}' },
+      { form: 'ouille', pos: 'n.f.', gloss: 'un petit coup de mou causé par {x}' },
+      { form: 'isme', pos: 'n.m.', gloss: 'la conviction que tout va mieux avec {un:x}' },
+    ],
+    mixes: ['{un:b} qui finit toujours en {0:a}', "{un:b} avec toute l'énergie {dun:a}",
+      'ce qui se passe quand {a} croise {b}', { t: "l'impression {dun:a} au beau milieu {dun:b}", event: true }],
+    join: (word, suffix) => (/[aeiouy]$/.test(word) && /^[aeiouy]/.test(suffix) ? word.slice(0, -1) : word) + suffix,
+    mixPos: b => (b.x.g === 'f' ? 'n.f.' : 'n.m.'),
+  };
+  Object.assign(EXAMPLES, {
+    'ev:esque': ["On n'est que mardi, mais tout le bureau a l'air très {w}.", "{Who} devient un peu {w} dès qu'il pleut."],
+    'ev:ette': ["{Who} s'est offert {un:w} {where}.", 'Rien ne vaut {un:w} le dimanche matin.'],
+    'ev:ade': ['{When}, la ville a organisé sa toute première {w}.', 'La grande {w} {where} a affiché complet en une heure.'],
+    'ev:iste': ["{Who} se revendique {w} et ne s'en cache pas.", 'Tous les {w}s {where} sont arrivés en avance.'],
+    'ev:ifier': ['{Who} a décidé de tout {w} {where}.', 'Le nouveau chef veut {w} chaque réunion.'],
+    'ev:erie': ["Une minuscule {w} vient d'ouvrir {where}.", '{Who} passe tous ses samedis {a:w}.'],
+    'ev:core': ['{When}, {le:w} a envahi tous les cafés {where}.', "Son appartement, c'est du {w} pur jus, jusqu'aux rideaux."],
+    'ev:ouille': ['{Who} a eu une sacrée {w} {where}.', "Rien de tel qu'une sieste pour soigner une {w}."],
+    'ev:isme': ["{Who} prêche {le:w} à qui veut l'entendre.", '{When}, {le:w} est devenu la religion officieuse de la ville.'],
+    'ev:mix': ["{Who} a inventé {le:w} {where}, et depuis, plus personne ne s'en passe.",
+      "{When}, tout le monde s'est mis à parler {de:w}.", "Demandez à n'importe qui {where} : tout le monde a une histoire de {w}."],
+  });
 
   // Endings for Invent words built on a real word ("pauvre" + "isme"). {b} is the real word.
   const AFFIX_SUFFIXES = [
@@ -379,7 +427,7 @@
     stem: t => (t.endsWith('aux') && t.length > 4 ? t.slice(0, -3) + 'al'
       : /[sx]$/.test(t) && t.length > 3 ? t.slice(0, -1) : t),
     tokens: s => s.toLowerCase().match(/[a-zàâäçéèêëîïôöùûüÿœæ]+/g) || [],
-    describe, example, fill,
+    describe, example, fill, everyday: EVERYDAY,
     plural: w => (w.endsWith('aux') ? w.slice(0, -3) + 'al' : /[^s][sx]$/.test(w) ? w.slice(0, -1) : ''),
     inflected: (w, v) => (/[sx]$/.test(w) && v.has(w.slice(0, -1))) || (w.endsWith('e') && v.has(w.slice(0, -1)))
       || (w.endsWith('es') && v.has(w.slice(0, -2))),

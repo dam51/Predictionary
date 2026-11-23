@@ -53,7 +53,6 @@ const MORPHEMES = [
   m('necr', 'root', 'the dead', 'death dead', 'o', 'posthumous'),
   m('anthrop', 'root', 'humans', 'human people person', 'o', 'human'),
   m('dem', 'root', 'the people', 'crowd public', 'o', 'public'),
-  m('ped', 'root', 'children', 'child children kid', 'o', 'childlike'),
   m('ger', 'root', 'old age', 'old elderly aging', 'o', 'elderly'),
   m('cardi', 'root', 'the heart', 'heart', 'o', 'heartfelt'),
   m('cephal', 'root', 'the head', 'head', 'o', 'cerebral'),
@@ -377,11 +376,70 @@ function exampleFor(key, w, x) {
   recentTemplates.push(t);
   if (recentTemplates.length > 12) recentTemplates.shift();
   const who = pick(WHO);
-  return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{x}', x)
+  const xs = typeof x === 'string' ? { np: x, pl: x } : x;
+  return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{s:x}', xs.pl).replaceAll('{x}', xs.np)
     .replaceAll('{Who}', who).replaceAll('{who}', lowerFirst(who))
     .replaceAll('{where}', pick(WHERE)).replaceAll('{When}', pick(WHEN))
     .replace(/\b([Aa]) (?=[aeiou])/g, '$1n ');
 }
+
+// Everyday style: blends and everyday endings on ordinary words. [word, as a noun phrase, plural]
+const EVERYDAY_WORDS = [
+  ['monday', 'a Monday', 'Mondays'], ['nap', 'a nap', 'naps'], ['sofa', 'a sofa', 'sofas'],
+  ['meeting', 'a meeting', 'meetings'], ['inbox', 'an inbox', 'inboxes'], ['sock', 'a sock', 'socks'],
+  ['queue', 'a queue', 'queues'], ['umbrella', 'an umbrella', 'umbrellas'], ['sandwich', 'a sandwich', 'sandwiches'],
+  ['holiday', 'a holiday', 'holidays'], ['playlist', 'a playlist', 'playlists'], ['selfie', 'a selfie', 'selfies'],
+  ['toaster', 'a toaster', 'toasters'], ['cat', 'a cat', 'cats'], ['pizza', 'a pizza', 'pizzas'],
+  ['coffee', 'a coffee', 'coffees'], ['cloud', 'a cloud', 'clouds'], ['puddle', 'a puddle', 'puddles'],
+  ['commute', 'a commute', 'commutes'], ['deadline', 'a deadline', 'deadlines'], ['weekend', 'a weekend', 'weekends'],
+  ['password', 'a password', 'passwords'], ['pillow', 'a pillow', 'pillows'], ['snack', 'a snack', 'snacks'],
+  ['battery', 'a battery', 'batteries'], ['podcast', 'a podcast', 'podcasts'], ['breakfast', 'a breakfast', 'breakfasts'],
+  ['meme', 'a meme', 'memes'], ['hug', 'a hug', 'hugs'], ['email', 'an email', 'emails'], ['drizzle', 'a drizzle', 'drizzles'],
+  ['picnic', 'a picnic', 'picnics'], ['sunday', 'a Sunday', 'Sundays'], ['biscuit', 'a biscuit', 'biscuits'],
+  ['fridge', 'a fridge', 'fridges'], ['bus', 'a bus', 'buses'], ['spreadsheet', 'a spreadsheet', 'spreadsheets'],
+  ['doughnut', 'a doughnut', 'doughnuts'], ['blanket', 'a blanket', 'blankets'], ['traffic', 'a traffic jam', 'traffic jams'],
+];
+
+function joinEn(word, suffix) {
+  if (word.at(-1) === suffix[0]) return word + suffix.slice(1); // pizza + aholic
+  if (word.endsWith('e') && VOWELS.has(suffix[0])) return word.slice(0, -1) + suffix; // commute + ish
+  return word + suffix;
+}
+
+const EVERYDAY = {
+  words: EVERYDAY_WORDS.map(([w, np, pl]) => ({ w, x: { np, pl },
+    event: 'monday nap meeting holiday commute deadline weekend breakfast picnic sunday drizzle traffic'.split(' ').includes(w) })),
+  suffixes: [
+    { form: 'ish', pos: 'adj.', gloss: 'feeling a bit like {x}' },
+    { form: 'core', pos: 'n.', gloss: 'an aesthetic built entirely around {s:x}' },
+    { form: 'ify', pos: 'v.', gloss: 'to make anything feel like {x}' },
+    { form: 'ster', pos: 'n.', gloss: 'someone who lives for {s:x}' },
+    { form: 'fest', pos: 'n.', gloss: 'a day-long celebration of {s:x}' },
+    { form: 'less', pos: 'adj.', gloss: 'stuck without {x}' },
+    { form: 'aholic', pos: 'n.', gloss: 'someone who cannot stop thinking about {s:x}' },
+    { form: 'ery', pos: 'n.', gloss: 'a shop that sells nothing but {s:x}' },
+    { form: 'ism', pos: 'n.', gloss: 'the belief that everything is better with {x}' },
+  ],
+  // { t, event: true } = the {b} word must be an event ("in the middle of a toaster" makes no sense)
+  mixes: ['{b} that somehow turns into {a}', { t: 'the feeling of {a} in the middle of {b}', event: true },
+    '{b} with the energy of {a}', 'what you get when {a} meets {b}'],
+  join: joinEn,
+  mixPos: () => 'n.',
+};
+Object.assign(EXAMPLES, {
+  'ev:ish': ['It\'s only Tuesday, but the whole office feels {w}.', '{Who} gets a little {w} every time it rains.'],
+  'ev:core': ['{When}, {w} took over every café {where}.', 'Her flat is pure {w}, right down to the curtains.'],
+  'ev:ify': ['{Who} has decided to {w} the whole house.', 'The new manager wants to {w} every meeting.'],
+  'ev:ster': ['{Who} is a proud {w} and doesn\'t care who knows it.', 'Every {w} {where} turned up early.'],
+  'ev:fest': ['{When}, the town threw its very first {w}.', 'The annual {w} {where} sold out in minutes.'],
+  'ev:less': ['{Who} spent the whole week {w} and survived.', 'Being {w} {where} turned out to be oddly relaxing.'],
+  'ev:aholic': ['{Who}, a self-confessed {w}, has finally asked for help.', 'Every family has one {w}.'],
+  'ev:ery': ['A tiny {w} has just opened {where}.', '{Who} spends every Saturday at the {w}.'],
+  'ev:ism': ['{Who} preaches {w} to anyone who will listen.', '{When}, {w} became the town\'s unofficial religion.'],
+  'ev:mix': ['{Who} invented the {w} {where}, and nobody has looked back.',
+    'Nothing ruins a quiet afternoon like an unexpected {w}.', '{When}, the {w} became a household word.',
+    'Ask anyone {where} about the {w}: they all have a story.'],
+});
 
 // Everything language-specific. Other languages (lang-fr.js) register a pack with the same shape.
 const EN = {
@@ -392,8 +450,10 @@ const EN = {
     'a noise that sounds like a word and might become one'],
   soundsLike: 'sounds like', blend: 'blend of {a} and {b}',
   stopwords: STOPWORDS, stem, tokens: s => s.toLowerCase().match(/[a-z]+/g) || [],
-  describe, example: exampleFor,
-  fill: (tpl, x, key = 'x') => tpl.replaceAll(`{${key}}`, x),
+  describe, example: exampleFor, everyday: EVERYDAY,
+  fill: (tpl, x, key = 'x') => (typeof x === 'string'
+    ? tpl.replaceAll(`{${key}}`, x)
+    : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{${key}}`, x.np)),
   plural: w => (w.endsWith('ies') ? w.slice(0, -3) + 'y' : /[^su]s$/.test(w) ? w.slice(0, -1) : ''),
   inflected: (w, v) => (w.endsWith('s') && v.has(w.slice(0, -1)))
     || (w.endsWith('es') && v.has(w.slice(0, -2)))
@@ -530,20 +590,26 @@ class Predictionary {
     return [[pre, ...roots, suf].filter(Boolean), definition, core];
   }
 
-  /** Build one new word from roots, with its meaning and an example sentence. */
-  predict() {
+  /** Build one new word, with its meaning and an example sentence.
+   *  style: 'everyday' (ordinary words), 'classic' (one root, easy to say) or 'scientific' (stacked roots). */
+  predict(style = 'everyday') {
+    if (style === 'everyday' && this.L.everyday) return this.predictEveryday();
+    const classic = style === 'classic';
     const L = this.L;
     const candidates = [];
     for (let tries = 0; candidates.length < 8 && tries < 500; tries++) {
-      const suf = Math.random() < 0.85 ? pick(L.suffixes.filter(s => !this.recentSuffixes.includes(s.form))) : null;
-      const k = suf && Math.random() < 0.5 ? 1 : 2;
-      const pre = k === 1 && Math.random() < 0.4 ? pick(L.prefixes) : null; // a prefix on two roots garbles the meaning
+      const suf = classic || Math.random() < 0.85
+        ? pick(L.suffixes.filter(s => !this.recentSuffixes.includes(s.form))) : null;
+      const k = classic ? 1 : suf && Math.random() < 0.5 ? 1 : 2;
+      const pre = k === 1 && Math.random() < (classic ? 0.25 : 0.4) ? pick(L.prefixes) : null; // a prefix on two roots garbles the meaning
       const roots = [...L.roots].sort(() => Math.random() - 0.5).slice(0, k);
       const parts = [pre, ...roots, suf].filter(Boolean);
       if (suf && roots.some(r => suf.form.startsWith(r.form.slice(0, 4)))) continue; // "graph" + "-graphy"
       const w = Predictionary.assemble(parts, L.vowels);
+      if (classic && !this.easyToSay(w)) continue;
       if (!this.isKnown(w)) candidates.push({ score: this.scorer.score(w), w, pre, roots, suf, parts });
     }
+    if (!candidates.length) return this.predict('scientific');
     // A random pick among the most English-sounding few, so short "-ology" words don't always win.
     const best = pick(candidates.sort((a, b) => b.score - a.score).slice(0, 3));
     const [core, definition] = L.describe(best.pre, best.roots, best.suf);
@@ -556,6 +622,66 @@ class Predictionary {
       definition,
       example: L.example(key, best.w, core),
       recipe: recipeOf(best.parts),
+    };
+  }
+
+  /** At most 4 syllables and 2 consonant sounds in a row ("ph", "th"... count as one). */
+  easyToSay(w) {
+    const v = this.L.vowels;
+    let syllables = 0;
+    let run = 0;
+    let maxRun = 0;
+    let prevVowel = false;
+    for (const c of w.replace(/ph|th|ch|sh|ps|rh|gh|qu|ll|rr|gu/g, 'C')) {
+      const isVowel = v.has(c);
+      if (isVowel && !prevVowel) syllables += 1;
+      run = isVowel ? 0 : run + 1;
+      maxRun = Math.max(maxRun, run);
+      prevVowel = isVowel;
+    }
+    return syllables <= 4 && maxRun <= 2 && w.length <= 12;
+  }
+
+  /** Everyday style: an ordinary word plus an everyday ending, or two ordinary words blended together. */
+  predictEveryday() {
+    const L = this.L;
+    const E = L.everyday;
+    const candidates = [];
+    for (let tries = 0; candidates.length < 8 && tries < 300; tries++) {
+      if (Math.random() < 0.55) {
+        const word = pick(E.words);
+        const suf = pick(E.suffixes.filter(s => !this.recentSuffixes.includes(`ev:${s.form}`)));
+        const fem = suf.fem && word.x.g === 'f';
+        const form = fem ? suf.fem : suf.form;
+        const w = E.join(word.w, form);
+        if (w === word.w || this.isKnown(w) || !this.easyToSay(w)) continue;
+        candidates.push({ w, key: `ev:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: word.x,
+          definition: L.fill(suf.gloss, word.x), recipe: `${word.w} + -${form}` });
+      } else {
+        const mix = pick(E.mixes);
+        const a = pick(E.words);
+        const b = pick(E.words.filter(x => x !== a && (!mix.event || x.event)));
+        const options = this.blends(a.w, b.w)
+          .filter(o => o.w.length >= 4 && o.w.length <= Math.max(a.w.length, b.w.length) + 3 && this.easyToSay(o.w));
+        if (a.w.length + b.w.length <= 11 && !this.isKnown(a.w + b.w) && this.easyToSay(a.w + b.w)) {
+          options.push({ w: a.w + b.w, recipe: `${a.w} + ${b.w}` });
+        }
+        if (!options.length) continue;
+        const o = pick(options.slice(0, 2));
+        candidates.push({ w: o.w, key: 'ev:mix', pos: E.mixPos(b), core: b.x,
+          definition: L.fill(L.fill(mix.t || mix, a.x, 'a'), b.x, 'b'), recipe: o.recipe });
+      }
+    }
+    const best = pick(candidates.map(c => ({ ...c, score: this.scorer.score(c.w) }))
+      .sort((x, y) => y.score - x.score).slice(0, 3));
+    this.recentSuffixes = [...this.recentSuffixes, best.key].slice(-6);
+    return {
+      word: best.w,
+      pos: best.pos,
+      plausibility: this.plausibility(best.w),
+      definition: best.definition,
+      example: L.example(best.key, best.w, best.core, best.pos),
+      recipe: best.recipe,
     };
   }
 
@@ -604,7 +730,7 @@ class Predictionary {
     const e = endings[0];
     let start = w.slice(0, -e.form.length).replace(/[oi]$/, ''); // "syco-phobia": the linking vowel isn't part of it
     let trimmed = '';
-    for (let i = start.length - 1; i >= Math.max(3, Math.ceil(start.length / 2)); i--) {
+    for (let i = start.length - 1; i >= Math.max(L.minBase || 3, Math.ceil(start.length / 2)); i--) {
       if (this.common.has(start.slice(0, i))) { // "poorat" + "-ed" reads better as "poor"
         [start, trimmed] = [start.slice(0, i), '…'];
         break;
@@ -618,7 +744,7 @@ class Predictionary {
     for (const [pf, tpl] of [['', '{r}'], ...this.L.affixPrefixes]) {
       if (!w.startsWith(pf)) continue;
       const rest = w.slice(pf.length);
-      const inner = (pf && rest.length >= 3 && this.common.has(rest))
+      const inner = (pf && rest.length >= (this.L.minBase || 3) && this.common.has(rest))
         ? { definition: rest, pos: '', recipe: rest }
         : this.baseAndSuffix(rest);
       if (inner) {
@@ -636,7 +762,7 @@ class Predictionary {
       const stem = rest.slice(0, -sf.length);
       const bases = [stem, stem + 'e', stem.endsWith('i') && stem.slice(0, -1) + 'y',
         stem.length > 3 && stem.at(-1) === stem.at(-2) && stem.slice(0, -1)]; // happi->happy, sadd->sad
-      const base = bases.find(b => b && b.length >= 3 && this.common.has(b));
+      const base = bases.find(b => b && b.length >= (this.L.minBase || 3) && this.common.has(b));
       if (base) return { definition: this.L.fill(tpl, base, 'b'), pos, recipe: `${base} + -${sf}` };
     }
     return null;
@@ -659,12 +785,13 @@ class Predictionary {
 
   /** No clean split: lean on the longest real word the invented one starts with (or contains). */
   explainFallback(w) {
+    const min = this.L.minBase || 3;
     const startsWith = set => {
-      for (let i = w.length - 1; i >= 3; i--) if (set.has(w.slice(0, i))) return w.slice(0, i);
+      for (let i = w.length - 1; i >= min; i--) if (set.has(w.slice(0, i))) return w.slice(0, i);
       return '';
     };
     const contains = set => {
-      for (let len = w.length - 1; len >= 3; len--) {
+      for (let len = w.length - 1; len >= min; len--) {
         for (let i = 1; i + len <= w.length; i++) if (set.has(w.slice(i, i + len))) return w.slice(i, i + len);
       }
       return '';

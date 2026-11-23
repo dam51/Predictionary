@@ -53,6 +53,10 @@
   button.step { margin-top: .75rem; padding: 0 .9rem; border: 1px solid var(--accent); border-radius: 12px;
                 background: #fff; color: var(--accent); font: 600 .95rem -apple-system, system-ui, sans-serif; }
   button.step:disabled { opacity: .35; }
+  .styles { display: flex; gap: .4rem; justify-content: center; margin-top: .65rem; }
+  .styles button { border: 1px solid var(--line); background: #fff; color: var(--muted); border-radius: 999px;
+                   padding: .3rem .8rem; font: .85rem -apple-system, system-ui, sans-serif; }
+  .styles button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
   .pos { font: italic .95rem Georgia, serif; color: var(--muted); margin-left: .4rem; font-weight: normal; }
   .def { font-style: italic; margin-top: .15rem; }
   .def[contenteditable] { outline: none; border-bottom: 1px dashed var(--line); }
@@ -62,6 +66,8 @@
   .example::after { content: "\201D"; }
   .entry:lang(fr) .example::before { content: "\AB\A0"; }
   .entry:lang(fr) .example::after { content: "\A0\BB"; }
+  .entry:lang(es) .example::before { content: "\AB"; }
+  .entry:lang(es) .example::after { content: "\BB"; }
   .recipe { font: .78rem ui-monospace, Menlo, monospace; color: var(--muted); margin-top: .3rem; }
   .side { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
   .bar { height: 4px; background: #eee; border-radius: 2px; width: 3.5rem; }
@@ -90,6 +96,7 @@
   <div class="lang" role="group" aria-label="Language">
     <button data-lang="en" class="on">EN</button>
     <button data-lang="fr">FR</button>
+    <button data-lang="es">ES</button>
   </div>
 </header>
 
@@ -101,6 +108,11 @@
       <button class="step" id="predict-prev" disabled data-i18n="prev">‹ Previous</button>
       <button class="go" id="predict-go" disabled data-i18n="predict">Predict a word</button>
       <button class="step" id="predict-next" disabled data-i18n="next">Next ›</button>
+    </div>
+    <div class="styles" role="group" aria-label="Style">
+      <button data-style="everyday" data-i18n="styleEveryday">Everyday</button>
+      <button data-style="classic" data-i18n="styleClassic">Classic</button>
+      <button data-style="scientific" data-i18n="styleScientific">Scientific</button>
     </div>
     <ol id="predict-out"></ol>
   </section>
@@ -158,16 +170,20 @@
 
 <script src="engine.js"></script>
 <script src="lang-fr.js"></script>
+<script src="lang-es.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const KEY = 'predictionary.saved';
 let saved = JSON.parse(localStorage.getItem(KEY) || '[]');
 let engine = null;
 const LANG_KEY = 'predictionary.lang';
+const STYLE_KEY = 'predictionary.style';
+let style = localStorage.getItem(STYLE_KEY) || 'everyday';
 const knownKey = lang => (lang === 'en' ? 'predictionary.known' : `predictionary.known.${lang}`);
 const checked = new Map(); // "lang:word" -> exists on Wiktionary
-const LISTS = { en: ['words.txt', 'common.txt'], fr: ['words-fr.txt', 'common-fr.txt', 'lemmas-fr.txt'] };
-const LETTERS = { en: /[^a-z]/g, fr: /[^a-zàâäçéèêëîïôöùûüÿœæ]/g };
+const LISTS = { en: ['words.txt', 'common.txt'], fr: ['words-fr.txt', 'common-fr.txt', 'lemmas-fr.txt'],
+  es: ['words-es.txt', 'common-es.txt', 'lemmas-es.txt'] };
+const LETTERS = { en: /[^a-z]/g, fr: /[^a-zàâäçéèêëîïôöùûüÿœæ]/g, es: /[^a-záéíóúüñ]/g };
 
 const STRINGS = {
   en: {
@@ -186,6 +202,7 @@ const STRINGS = {
     navDefine: 'Define', define: 'Define', defineHint: "Type a word that doesn't exist and find out what it means.",
     definePh: 'a made-up word', defineEmpty: 'Type a word first.', realWord: '“{w}” is already a real word.',
     lookUp: 'See it on Wiktionary',
+    styleEveryday: 'Everyday', styleClassic: 'Classic', styleScientific: 'Scientific',
   },
   fr: {
     tagline: "un dictionnaire des mots qui n'existent pas encore", loading: "J'apprends le français…",
@@ -204,9 +221,30 @@ const STRINGS = {
     navDefine: 'Définir', define: 'Définir', defineHint: "Tapez un mot qui n'existe pas et découvrez ce qu'il veut dire.",
     definePh: 'un mot inventé', defineEmpty: "Tapez d'abord un mot.", realWord: '« {w} » est déjà un vrai mot.',
     lookUp: 'Le voir sur le Wiktionnaire',
+    styleEveryday: 'Quotidien', styleClassic: 'Classique', styleScientific: 'Savant',
+  },
+  es: {
+    tagline: 'un diccionario de palabras que aún no existen', loading: 'Aprendiendo español…',
+    prev: '‹ Anterior', next: 'Siguiente ›', predict: 'Predecir una palabra', howMany: 'Cuántas',
+    shortest: 'Más corta', longest: 'Más larga', startsWith: 'Empieza por', creativity: 'Creatividad',
+    tame: 'prudente', balanced: 'equilibrada', wild: 'desatada', invent: 'Inventar',
+    coinHint: 'Describe una idea y obtén palabras para nombrarla. Prueba «el miedo a las reuniones» o «la pasión por el café».',
+    conceptPh: 'una idea que merece una palabra', coin: 'Forjar', export: 'Exportar en JSON', navPredict: 'Predecir',
+    navInvent: 'Inventar', navCoin: 'Forjar', navSaved: 'Favoritos', savedEmpty: 'Toca ★ en una palabra para guardarla aquí.',
+    checking: 'Compruebo que la palabra es realmente nueva…', allExisted: 'Todas las candidatas ya existían. ¡Inténtalo otra vez!',
+    inventEmpty: 'Nada nuevo. Amplía la longitud o «Empieza por».',
+    coinEmpty: 'Ninguna candidata. Usa al menos dos ideas, por ejemplo «el miedo a las reuniones».',
+    offline: 'No se pudo contactar con Wikcionario: comprobado solo con la lista de palabras integrada.',
+    loadError: 'No se pudo cargar la lista de palabras ({e}).', writeDef: 'toca para escribir una definición',
+    sounds: 'suena español al {n} %', save: 'Guardar', share: 'Compartir',
+    navDefine: 'Definir', define: 'Definir', defineHint: 'Escribe una palabra que no exista y descubre qué significa.',
+    definePh: 'una palabra inventada', defineEmpty: 'Escribe primero una palabra.', realWord: '«{w}» ya es una palabra real.',
+    lookUp: 'Verla en Wikcionario',
+    styleEveryday: 'Cotidiano', styleClassic: 'Clásico', styleScientific: 'Científico',
   },
 };
-let lang = localStorage.getItem(LANG_KEY) || ((navigator.language || '').startsWith('fr') ? 'fr' : 'en');
+const userLang = (navigator.language || '').slice(0, 2);
+let lang = localStorage.getItem(LANG_KEY) || (['fr', 'es'].includes(userLang) ? userLang : 'en');
 const t = key => STRINGS[lang][key];
 
 function el(tag, cls, text) {
@@ -332,7 +370,7 @@ function busy(list, on) {
   document.querySelectorAll('button.go').forEach(b => { b.disabled = on; });
 }
 
-const predictions = { en: { list: [], shown: -1 }, fr: { list: [], shown: -1 } };
+const predictions = { en: { list: [], shown: -1 }, fr: { list: [], shown: -1 }, es: { list: [], shown: -1 } };
 const hist = () => predictions[lang];
 
 function updateSteps(disable = false) {
@@ -352,7 +390,7 @@ $('predict-go').onclick = async () => {
   busy(out, true);
   updateSteps(true);
   let result = { fresh: [], offline: false };
-  for (let i = 0; i < 6 && !result.fresh.length; i++) result = await onlyNew([engine.predict()], 1);
+  for (let i = 0; i < 6 && !result.fresh.length; i++) result = await onlyNew([engine.predict(style)], 1);
   busy(out, false);
   if (!result.fresh.length) {
     render(out, [], t('allExisted'));
@@ -442,6 +480,7 @@ function loadEngine(l) {
     .then(([words, common, train]) => {
       const e = new Predictionary(words, common, l, train || words);
       e.addKnown(JSON.parse(localStorage.getItem(knownKey(l)) || '[]'));
+      if (train) e.addKnown(train); // dictionary headwords count as existing words too
       return e;
     });
   return engines[l];
@@ -484,6 +523,14 @@ async function setLang(l) {
 }
 
 document.querySelectorAll('.lang button').forEach(b => { b.onclick = () => { if (b.dataset.lang !== lang) setLang(b.dataset.lang); }; });
+
+function showStyle() {
+  document.querySelectorAll('.styles button').forEach(b => b.classList.toggle('on', b.dataset.style === style));
+}
+document.querySelectorAll('.styles button').forEach(b => {
+  b.onclick = () => { style = b.dataset.style; localStorage.setItem(STYLE_KEY, style); showStyle(); };
+});
+showStyle();
 setLang(lang);
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

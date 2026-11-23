@@ -1,0 +1,12 @@
+lemmas-es.txt and common-es.txt list headwords from the Spanish spelling dictionary for
+LibreOffice/Apache OpenOffice (es_ES 2.8, Santiago Bosio and contributors, https://github.com/sbosio/rla-es,
+obtained via https://github.com/wooorm/dictionaries). That dictionary is offered under GPL 3, LGPL 3 or
+MPL 1.1; these files use it under the Mozilla Public License 1.1: https://www.mozilla.org/MPL/1.1/
+Changes: kept the word stems only (no affix rules), lowercase words of 3-20 letters; common-es.txt keeps the
+stems seen at least 50 times in the frequency list below. These two files remain under MPL 1.1.
+
+words-es.txt is derived from FrequencyWords (Hermit Dave, https://github.com/hermitdave/FrequencyWords,
+OpenSubtitles 2018 Spanish), whose content is licensed CC BY-SA 4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
+Changes: kept lowercase words of 3-20 letters seen at least 5 times, without the counts.
+words-es.txt is shared under the same CC BY-SA 4.0 licence.
