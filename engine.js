@@ -148,13 +148,32 @@ const RELATIONS = ['powered by', 'inspired by', 'borrowed from', 'hidden inside'
 const WHO = ['My grandmother', 'The night porter', 'A retired pilot', 'Our new neighbour', 'The village baker',
   'A tired accountant', 'The lighthouse keeper', 'My dentist', 'A philosophy student', 'The mayor',
   'A travelling magician', 'The school caretaker', 'A famous chef', 'The landlord', 'An off-duty astronaut',
-  'The museum guard', 'A taxi driver from Porto', 'The choir director', 'My younger brother', 'A semi-retired detective'];
+  'The museum guard', 'A taxi driver from Porto', 'The choir director', 'My younger brother', 'A semi-retired detective',
+  'The postwoman', 'A nervous best man', 'My yoga teacher', 'The quiz night champion', 'A bored lifeguard',
+  'The woman at number 42', 'A first-year nurse', 'The hotel receptionist', 'My cousin from Cork', 'A jet-lagged violinist'];
 const WHERE = ['in Lisbon', 'at the village fête', 'on the night train to Vienna', 'in a basement in Leeds',
   'at the back of the library', 'on a ferry to Tangier', 'in a Tokyo hotel lobby', 'at the annual fishing contest',
-  'in the staff kitchen', 'halfway up a mountain', 'at a wedding in Naples', 'in a launderette in Glasgow'];
+  'in the staff kitchen', 'halfway up a mountain', 'at a wedding in Naples', 'in a launderette in Glasgow',
+  'at a motorway service station', 'in the queue at the post office', 'on a camping trip in Wales',
+  'at a garden centre in Kent', 'in the back of a taxi', 'at the office Christmas party', 'on a rooftop in Madrid',
+  'at a car boot sale'];
 const WHEN = ['Last winter', 'Every Tuesday', 'Since the power cut', 'On the day the clocks went back',
   'Long before the internet', 'During the heatwave', 'The morning after the wedding',
-  'By the third week of the strike', 'In the spring of 1987', 'Shortly after the lottery win'];
+  'By the third week of the strike', 'In the spring of 1987', 'Shortly after the lottery win',
+  'Halfway through the meeting', 'On the first day of the sales', 'Just before midnight', 'After the third coffee',
+  'On a rainy bank holiday', 'The week the boiler broke'];
+const ADULTS = { who: WHO, where: WHERE, when: WHEN };
+const KIDS = {
+  who: ['My little sister', 'Our teacher', 'Grandpa', 'The new kid in class', 'A very small pirate', 'My best friend',
+    'The dinner lady', 'A sleepy giant', 'The tooth fairy', 'My big brother', 'The bus driver', 'A shy dragon',
+    'Granny', 'The head teacher', 'A friendly robot', 'My cousin Lily', 'The school librarian', 'A brave little mouse'],
+  where: ['at the park', 'in the playground', 'at Granny\'s house', 'on the school bus', 'at the beach', 'under the bed',
+    'in the treehouse', 'at the zoo', 'in a castle', 'at the swimming pool', 'in the garden', 'at the school fair',
+    'in the sandpit', 'on a pirate ship', 'at the funfair', 'in the classroom'],
+  when: ['Yesterday after school', 'On the last day of term', 'At bedtime', 'Every Saturday morning',
+    'During the summer holidays', 'On a snowy day', 'Once upon a time', 'On my birthday', 'Right after lunch',
+    'At playtime', 'During the school trip', 'On a rainy Sunday'],
+};
 
 const EXAMPLES = {
   phobia: [
@@ -367,6 +386,7 @@ function describe(pre, roots, suf) {
 }
 
 const recentTemplates = [];
+const AN = /\b([Aa]) (?=[aeio]|u(?!ni|se))/g; // "a umbrella" -> "an umbrella", but "a unicorn"
 
 /** Fill a sentence for this word, avoiding templates used in the last dozen sentences. */
 function exampleFor(key, w, x) {
@@ -375,13 +395,14 @@ function exampleFor(key, w, x) {
   const t = pick(fresh.length ? fresh : all);
   recentTemplates.push(t);
   if (recentTemplates.length > 12) recentTemplates.shift();
-  const who = pick(WHO);
+  const S = key.startsWith('ch:') ? KIDS : ADULTS;
+  const who = pick(S.who);
   const xs = typeof x === 'string' ? { np: x, pl: x } : x;
   return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{s:x}', xs.pl)
     .replaceAll('{0:x}', xs.np.replace(/^(a|an) /, '')).replaceAll('{x}', xs.np)
     .replaceAll('{Who}', who).replaceAll('{who}', lowerFirst(who))
-    .replaceAll('{where}', pick(WHERE)).replaceAll('{When}', pick(WHEN))
-    .replace(/\b([Aa]) (?=[aeiou])/g, '$1n ');
+    .replaceAll('{where}', pick(S.where)).replaceAll('{When}', pick(S.when))
+    .replace(AN, '$1n ');
 }
 
 // Everyday style: blends, everyday endings and prefixes on ordinary words.
@@ -431,36 +452,61 @@ function joinEn(word, suffix) {
 }
 
 // Meanings for blends: a = the first word, b = the second (the head); a/b list the word types that fit.
+const PHYSICAL = ['food', 'thing', 'tech', 'animal', 'weather'];
 const EVERYDAY = {
   words: EVERYDAY_WORDS.map(([w, np, pl, cat]) => ({ w, x: { np, pl }, cat })),
   suffixes: [
-    { form: 'ish', pos: 'adj.', gloss: ['feeling a bit like {x}', 'not quite {x}, but close'] },
-    { form: 'core', pos: 'n.', gloss: ['an aesthetic built entirely around {s:x}', 'a music genre that only sings about {s:x}'] },
-    { form: 'ify', pos: 'v.', gloss: ['to make anything feel like {x}', 'to add a little too much {0:x} to something'] },
-    { form: 'ster', pos: 'n.', gloss: ['someone who lives for {s:x}', 'a person who always knows where the best {s:x} are'] },
-    { form: 'fest', pos: 'n.', gloss: ['a day-long celebration of {s:x}', 'a party where everyone has to bring {x}'] },
-    { form: 'less', pos: 'adj.', gloss: ['stuck without {x}', 'having lost {x} and refusing to talk about it'] },
-    { form: 'aholic', pos: 'n.', gloss: ['someone who cannot stop thinking about {s:x}', 'a person who owns far too many {s:x}'] },
-    { form: 'ery', pos: 'n.', gloss: ['a shop that sells nothing but {s:x}', 'a small workshop where {s:x} are made by hand'] },
-    { form: 'ism', pos: 'n.', gloss: ['the belief that everything is better with {x}', 'a political movement promising {s:x} for all'] },
-    { form: 'nado', pos: 'n.', gloss: ['a sudden swirling storm of {s:x}', 'the chaos that follows when there are far too many {s:x}'] },
-    { form: 'ville', pos: 'n.', gloss: ['a town where everything revolves around {s:x}', 'the place your mind wanders to when you think about {s:x}'] },
-    { form: 'ology', pos: 'n.', gloss: ['the very serious study of {s:x}', 'a degree nobody asked for, entirely about {s:x}'] },
-    { form: 'tastic', pos: 'adj.', gloss: ['as good as {x} on a Friday', 'unbelievably full of {s:x}'] },
-    { form: 'zilla', pos: 'n.', gloss: ['a monster made entirely of {s:x}', '{x} that has grown far too big'] },
-    { form: 'let', pos: 'n.', gloss: ['a tiny, adorable {0:x}',
-      { t: 'a {0:x} small enough to fit in a pocket', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
+    { form: 'ish', pos: 'adj.', gloss: ['feeling a bit like {x}', 'not quite {x}, but close', 'slightly too fond of {s:x}',
+      'in the mood for {x} but too polite to say so'] },
+    { form: 'core', pos: 'n.', gloss: ['an aesthetic built entirely around {s:x}', 'a music genre that only sings about {s:x}',
+      'a fashion trend inspired by {s:x}', 'a whole way of life based on {s:x}'] },
+    { form: 'ify', pos: 'v.', gloss: ['to make anything feel like {x}', 'to add a little too much {0:x} to something',
+      'to explain everything using {s:x}', 'to quietly replace something with {x}'] },
+    { form: 'ster', pos: 'n.', gloss: ['someone who lives for {s:x}', 'a person who always knows where the best {s:x} are',
+      'the friend who turns every conversation to {s:x}', 'a local legend in the world of {s:x}'] },
+    { form: 'fest', pos: 'n.', gloss: ['a day-long celebration of {s:x}', 'a party where everyone has to bring {x}',
+      'a festival with nothing on the programme but {s:x}', 'a week when {s:x} are suddenly everywhere'] },
+    { form: 'less', pos: 'adj.', gloss: ['stuck without {x}', 'having lost {x} and refusing to talk about it',
+      'bravely getting through the day without {x}', 'missing {x} more than anyone expected'] },
+    { form: 'aholic', pos: 'n.', gloss: ['someone who cannot stop thinking about {s:x}', 'a person who owns far too many {s:x}',
+      'someone who plans every holiday around {s:x}', 'a person who has never once said no to {x}'] },
+    { form: 'ery', pos: 'n.', gloss: ['a shop that sells nothing but {s:x}', 'a small workshop where {s:x} are made by hand',
+      'a secret room full of {s:x}', 'a museum dedicated to the history of {s:x}'] },
+    { form: 'ism', pos: 'n.', gloss: ['the belief that everything is better with {x}', 'a political movement promising {s:x} for all',
+      'the habit of judging people by their {s:x}', 'a school of thought that started with {x} and got out of hand'] },
+    { form: 'nado', pos: 'n.', gloss: ['a sudden swirling storm of {s:x}', 'the chaos that follows when there are far too many {s:x}',
+      'a whirlwind of {s:x} that arrives without warning', 'the weather forecast nobody wanted: {s:x} all afternoon'] },
+    { form: 'ville', pos: 'n.', gloss: ['a town where everything revolves around {s:x}', 'the place your mind wanders to when you think about {s:x}',
+      'a theme park where every ride is about {s:x}', 'a tiny village where everyone owns {x}'] },
+    { form: 'ology', pos: 'n.', gloss: ['the very serious study of {s:x}', 'a degree nobody asked for, entirely about {s:x}',
+      'the science of finding the perfect {0:x}', 'the art of talking about {s:x} for hours'] },
+    { form: 'tastic', pos: 'adj.', gloss: ['as good as {x} on a Friday', 'unbelievably full of {s:x}',
+      'better than {s:x}, and that is saying something', 'shining with the joy of {x}'] },
+    { form: 'zilla', pos: 'n.', gloss: ['a monster made entirely of {s:x}', '{x} that has grown far too big',
+      'someone who turns terrifying when they don\'t get {x}', 'a giant {0:x} stomping through the city'] },
+    { form: 'let', pos: 'n.', gloss: ['a tiny, adorable {0:x}', { t: 'a {0:x} small enough to fit in a pocket', a: PHYSICAL },
+      'a baby {0:x}, still learning the ropes', { t: 'a {0:x} so small you could lose it down the sofa', a: PHYSICAL }] },
   ],
   prefixes: [
-    { form: 'mega', gloss: ['{x}, but enormous', 'the biggest {0:x} anyone has ever seen'] },
-    { form: 'mini', gloss: ['a miniature {0:x}',
-      { t: 'a {0:x} small enough to fit in your hand', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
-    { form: 'over', gloss: ['far too much {0:x}', { t: '{x} that went on for far too long', a: ['event'] }] },
-    { form: 'anti', gloss: ['the exact opposite of {x}', 'something designed to protect you from {s:x}'] },
-    { form: 're', gloss: ['{x}, all over again', 'a second {0:x} nobody asked for'] },
-    { form: 'super', gloss: ['{x} with superpowers', 'the best {0:x} of the year'] },
-    { form: 'un', gloss: ['the feeling of {x} slowly disappearing', 'something that is definitely not {x}'] },
-    { form: 'semi', gloss: ['half {x}, half something else', '{x} that only half works'] },
+    { form: 'mega', gloss: ['{x}, but enormous', 'the biggest {0:x} anyone has ever seen', '{x} so big it has its own postcode',
+      '{x} with the volume turned all the way up'] },
+    { form: 'mini', gloss: ['a miniature {0:x}', { t: 'a {0:x} small enough to fit in your hand', a: PHYSICAL },
+      '{x} for people in a hurry', { t: 'a {0:x} sized for a hamster', a: ['food', 'thing', 'tech'] }] },
+    { form: 'over', gloss: ['far too much {0:x}', { t: '{x} that went on for far too long', a: ['event'] },
+      'the feeling of having had one {0:x} too many', 'an excessive love of {s:x}'] },
+    { form: 'anti', gloss: ['the exact opposite of {x}', 'something designed to protect you from {s:x}',
+      'a club for people who cannot stand {s:x}', 'a spray that keeps {s:x} away'] },
+    { form: 're', gloss: ['{x}, all over again', 'a second {0:x} nobody asked for', 'a {0:x} you thought you had got rid of',
+      'an old {0:x} brought back to life'] },
+    { form: 'super', gloss: ['{x} with superpowers', 'the best {0:x} of the year', '{x} that saves the day', '{x} wearing a cape'] },
+    { form: 'un', gloss: ['the feeling of {x} slowly disappearing', 'something that is definitely not {x}',
+      '{x} that never actually happened', 'a {0:x} that undoes itself as soon as you look away'] },
+    { form: 'semi', gloss: ['half {x}, half something else', '{x} that only half works', '{x} you only half remember',
+      'a {0:x} that hasn\'t made its mind up'] },
+    { form: 'ultra', gloss: ['the most extreme {0:x} imaginable', '{x}, but turned up to eleven'] },
+    { form: 'pre', gloss: ['the moment just before {x} shows up', 'a small warm-up {0:x} before the real one'] },
+    { form: 'post', gloss: ['whatever is left after {x}', 'the strange calm right after {x}'] },
+    { form: 'micro', gloss: ['a {0:x} you need a magnifying glass to see', 'the smallest possible amount of {0:x}'] },
   ],
   mixes: [
     '{b} that somehow turns into {a}', 'what you get when {a} meets {b}', '{b} with the energy of {a}',
@@ -483,38 +529,215 @@ const EVERYDAY = {
     { t: '{b} you only find after {a}', a: ['weather'], b: ['thing'] },
     { t: '{b} that will do anything for {a}', a: ['food'], b: ['animal'] },
     { t: '{b} that feels a week long because of {a}', b: ['day'] },
+    { t: '{b} where everyone has to bring {a}', a: ['food', 'thing'], b: ['event'] },
+    { t: '{b} interrupted by {a} at the worst possible moment', a: ['animal', 'tech', 'weather'], b: ['event'] },
+    { t: '{b} that only works if you are holding {a}', a: ['thing', 'food'], b: ['tech'] },
+    { t: '{b} shaped exactly like {a}', a: ['animal', 'food', 'thing'], b: ['food', 'thing'] },
+    { t: '{b} that {a} keeps stealing', a: ['animal'], b: ['food', 'thing', 'tech'] },
+    { t: '{b} you can only get on {a}', a: ['day'], b: ['food'] },
+    { t: '{b} that starts playing music whenever {a} begins', a: ['weather', 'event'], b: ['thing', 'tech'] },
+    { t: '{b} that should never have been invited to {a}', a: ['event'], b: ['animal'] },
+    { t: '{b} that smells of {0:a} and nobody knows why', a: ['food', 'weather'], b: ['tech', 'thing'] },
+    { t: 'the sudden urge for {a} in the middle of {b}', a: ['food'], b: ['event'] },
+    { t: '{b} that is secretly run by {s:a}', a: ['animal'], b: ['event', 'thing', 'tech'] },
+    { t: '{b} that only {a} would understand', a: ['animal'] },
+    { t: '{b} with the attention span of {a}', a: ['animal'], b: ['event', 'tech'] },
+    { t: '{b} that brings {a} with it wherever it goes', a: ['weather'], b: ['animal', 'thing', 'event'] },
   ],
   join: joinEn,
   joinPrefix: (pre, word) => pre + word,
   mixPos: () => 'n.',
 };
 Object.assign(EXAMPLES, {
-  'ev:ish': ['It\'s only Tuesday, but the whole office feels {w}.', '{Who} gets a little {w} every time it rains.'],
-  'ev:core': ['{When}, {w} took over every café {where}.', 'Her flat is pure {w}, right down to the curtains.'],
-  'ev:ify': ['{Who} has decided to {w} the whole house.', 'The new manager wants to {w} every meeting.'],
-  'ev:ster': ['{Who} is a proud {w} and doesn\'t care who knows it.', 'Every {w} {where} turned up early.'],
-  'ev:fest': ['{When}, the town threw its very first {w}.', 'The annual {w} {where} sold out in minutes.'],
-  'ev:less': ['{Who} spent the whole week {w} and survived.', 'Being {w} {where} turned out to be oddly relaxing.'],
-  'ev:aholic': ['{Who}, a self-confessed {w}, has finally asked for help.', 'Every family has one {w}.'],
-  'ev:ery': ['A tiny {w} has just opened {where}.', '{Who} spends every Saturday at the {w}.'],
-  'ev:ism': ['{Who} preaches {w} to anyone who will listen.', '{When}, {w} became the town\'s unofficial religion.'],
-  'ev:nado': ['{When}, a {w} hit the town and nobody went to work.', 'The weather forecast warns of a {w} {where}.'],
-  'ev:ville': ['{Who} has been living in {W} for years.', 'Welcome to {W}, population: one very happy {0:x}.'],
-  'ev:ology': ['{Who} has a PhD in {w}.', 'The {w} department {where} has one professor and three cats.'],
-  'ev:tastic': ['The party {where} was absolutely {w}.', '{Who} called the new menu totally {w}.'],
-  'ev:zilla': ['{When}, {who} accidentally created a {w}.', 'The {w} was last seen {where}.'],
-  'ev:let': ['{Who} keeps a {w} in their coat pocket.', 'Look at that {w}! Isn\'t it sweet?'],
+  'ev:ish': ['It\'s only Tuesday, but the whole office feels {w}.', '{Who} gets a little {w} every time it rains.',
+    'There\'s a {w} feeling in the air {where} today.', '{When}, {who} went quietly {w} and nobody noticed.',
+    'Don\'t talk to {who} before ten: they\'re still {w}.'],
+  'ev:core': ['{When}, {w} took over every café {where}.', 'Her flat is pure {w}, right down to the curtains.',
+    '{Who} has gone full {w}, and honestly it suits them.', 'The {w} look is all over the magazines this spring.',
+    'You can spot a {w} fan {where} from a mile away.'],
+  'ev:ify': ['{Who} has decided to {w} the whole house.', 'The new manager wants to {w} every meeting.',
+    'Give {who} ten minutes and they\'ll {w} anything.', '{When}, a startup promised to {w} the entire city.',
+    'Please don\'t {w} the wedding speech.'],
+  'ev:ster': ['{Who} is a proud {w} and doesn\'t care who knows it.', 'Every {w} {where} turned up early.',
+    'Ask any {w}: they\'ll talk for an hour.', '{When}, {who} was crowned {w} of the year.',
+    'There\'s always one {w} at every party.'],
+  'ev:fest': ['{When}, the town threw its very first {w}.', 'The annual {w} {where} sold out in minutes.',
+    '{Who} has been planning this year\'s {w} since January.', 'Tickets for {W} are like gold dust.',
+    'Nobody remembers how the {w} started, but nobody wants it to stop.'],
+  'ev:less': ['{Who} spent the whole week {w} and survived.', 'Being {w} {where} turned out to be oddly relaxing.',
+    '{When}, the whole street went {w}.', 'A {w} weekend is harder than it sounds.',
+    '{Who} came back from holiday looking {w} and very relieved.'],
+  'ev:aholic': ['{Who}, a self-confessed {w}, has finally asked for help.', 'Every family has one {w}.',
+    'The {w} support group meets {where} on Thursdays.', '{When}, {who} admitted to being a {w}.',
+    'You can always tell a {w} by the look in their eye.'],
+  'ev:ery': ['A tiny {w} has just opened {where}.', '{Who} spends every Saturday at the {w}.',
+    'The old {w} {where} has been there since 1952.', '{When}, the {w} ran out of stock for the first time.',
+    'There\'s a queue outside the {w} again.'],
+  'ev:ism': ['{Who} preaches {w} to anyone who will listen.', '{When}, {w} became the town\'s unofficial religion.',
+    'The rise of {w} has been gradual but unstoppable.', '{Who} gave a talk on {w} {where} and the room was packed.',
+    'Critics of {w} are always invited and never turn up.'],
+  'ev:nado': ['{When}, a {w} hit the town and nobody went to work.', 'The weather forecast warns of a {w} {where}.',
+    '{Who} filmed the {w} from an upstairs window.', 'Nobody saw the {w} coming.',
+    'After the {w}, the whole street needed tidying.'],
+  'ev:ville': ['{Who} has been living in {W} for years.', 'Welcome to {W}, population: one very happy {0:x}.',
+    'The bus to {W} leaves every hour {where}.', '{When}, {who} finally moved to {W}.',
+    'Nobody ever leaves {W} without a souvenir.'],
+  'ev:ology': ['{Who} has a PhD in {w}.', 'The {w} department {where} has one professor and three cats.',
+    '{When}, {w} was finally recognised as a real science.', 'The first {w} conference took place {where}.',
+    'Nobody understands {w} quite like {who}.'],
+  'ev:tastic': ['The party {where} was absolutely {w}.', '{Who} called the new menu totally {w}.',
+    '{When}, everything felt a bit {w}.', 'It wasn\'t just good, it was {w}.', 'Their new song is properly {w}.'],
+  'ev:zilla': ['{When}, {who} accidentally created a {w}.', 'The {w} was last seen {where}.',
+    'Lock the doors: the {w} is back.', '{Who} swears the {w} is harmless if you stay calm.',
+    'Every town has a {w} story, and ours happened {where}.'],
+  'ev:let': ['{Who} keeps a {w} in their coat pocket.', 'Look at that {w}! Isn\'t it sweet?',
+    '{When}, {who} came home with a {w}.', 'The {w} is the cutest thing {where}.',
+    'Everyone wanted to hold the {w}.'],
   'ev:pre': ['Nobody was ready for the {w} {where}.', '{Who} still talks about the {w} of 1987.',
     '{When}, a {w} changed everything.', 'If you ever meet a {w}, stay calm and back away slowly.',
     '{Who} swears they saw a {w} {where}.', 'The local paper ran a whole page on the {w}.',
-    'There was a {w} {where}, and the photos are incredible.', 'Everyone has a {w} story, but {who} has the best one.'],
+    'There was a {w} {where}, and the photos are incredible.', 'Everyone has a {w} story, but {who} has the best one.',
+    '{Who} has been dreaming of a {w} for years.', 'The {w} is back, and this time it\'s personal.',
+    'They say you never forget your first {w}.', '{When}, the {w} made the evening news.',
+    'The {w} is not for the faint-hearted.', 'If in doubt, blame the {w}.'],
   'ev:mix': ['{Who} invented the {w} {where}, and nobody has looked back.',
     'Nothing ruins a quiet afternoon like an unexpected {w}.', '{When}, the {w} became a household word.',
     'Ask anyone {where} about the {w}: they all have a story.',
     '{Who} swears the {w} is the best thing to happen {where} in years.',
     'There is no polite way to explain a {w} to your boss.', '{When}, {who} posted a photo of a {w} and it went viral.',
     'Every office has at least one {w}, and everyone pretends not to notice.',
-    '{Who} keeps a notebook of every {w} they have ever seen.', 'You haven\'t lived until you\'ve had a proper {w} {where}.'],
+    '{Who} keeps a notebook of every {w} they have ever seen.', 'You haven\'t lived until you\'ve had a proper {w} {where}.',
+    'I wasn\'t going to mention the {w}, but here we are.', '{Who} blames the {w} for everything.',
+    '{When}, {who} had their very first {w}.', 'Nobody talks about the {w} {where} any more.',
+    'The {w} is either genius or a terrible mistake.', 'Somewhere {where}, a {w} is happening right now.',
+    '{Who} wrote a whole song about the {w}.', 'There\'s a {w} in every family photo album.'],
+});
+
+// Children style: kid words, kid endings, kid meanings, and sentences with kid characters (KIDS).
+// [word, as a noun phrase, plural, type: event | food | thing | animal | weather | character]
+const CHILDREN_WORDS = [
+  ['bedtime', 'a bedtime', 'bedtimes', 'event'], ['bathtime', 'a bathtime', 'bathtimes', 'event'],
+  ['playtime', 'a playtime', 'playtimes', 'event'], ['sleepover', 'a sleepover', 'sleepovers', 'event'],
+  ['picnic', 'a picnic', 'picnics', 'event'], ['birthday', 'a birthday party', 'birthday parties', 'event'],
+  ['homework', 'a homework sheet', 'homework sheets', 'event'], ['tickle', 'a tickle', 'tickles', 'event'],
+  ['giggle', 'a giggle', 'giggles', 'event'], ['holiday', 'a holiday', 'holidays', 'event'], ['disco', 'a disco', 'discos', 'event'],
+  ['jelly', 'a jelly', 'jellies', 'food'], ['cookie', 'a cookie', 'cookies', 'food'], ['popcorn', 'a bowl of popcorn', 'bowls of popcorn', 'food'],
+  ['spaghetti', 'a plate of spaghetti', 'plates of spaghetti', 'food'], ['banana', 'a banana', 'bananas', 'food'],
+  ['carrot', 'a carrot', 'carrots', 'food'], ['lollipop', 'a lollipop', 'lollipops', 'food'], ['pancake', 'a pancake', 'pancakes', 'food'],
+  ['cupcake', 'a cupcake', 'cupcakes', 'food'], ['broccoli', 'a broccoli tree', 'broccoli trees', 'food'], ['muffin', 'a muffin', 'muffins', 'food'],
+  ['sausage', 'a sausage', 'sausages', 'food'], ['toast', 'a slice of toast', 'slices of toast', 'food'], ['custard', 'a bowl of custard', 'bowls of custard', 'food'],
+  ['crayon', 'a crayon', 'crayons', 'thing'], ['backpack', 'a backpack', 'backpacks', 'thing'], ['teddy', 'a teddy', 'teddies', 'thing'],
+  ['slide', 'a slide', 'slides', 'thing'], ['swing', 'a swing', 'swings', 'thing'], ['trampoline', 'a trampoline', 'trampolines', 'thing'],
+  ['bucket', 'a bucket', 'buckets', 'thing'], ['kite', 'a kite', 'kites', 'thing'], ['lunchbox', 'a lunchbox', 'lunchboxes', 'thing'],
+  ['sock', 'a sock', 'socks', 'thing'], ['pillow', 'a pillow', 'pillows', 'thing'], ['bike', 'a bike', 'bikes', 'thing'],
+  ['sandcastle', 'a sandcastle', 'sandcastles', 'thing'], ['balloon', 'a balloon', 'balloons', 'thing'], ['bubble', 'a bubble', 'bubbles', 'thing'],
+  ['puzzle', 'a puzzle', 'puzzles', 'thing'], ['drum', 'a drum', 'drums', 'thing'], ['snowman', 'a snowman', 'snowmen', 'thing'],
+  ['puppy', 'a puppy', 'puppies', 'animal'], ['kitten', 'a kitten', 'kittens', 'animal'], ['dinosaur', 'a dinosaur', 'dinosaurs', 'animal'],
+  ['unicorn', 'a unicorn', 'unicorns', 'animal'], ['dragon', 'a dragon', 'dragons', 'animal'], ['monkey', 'a monkey', 'monkeys', 'animal'],
+  ['frog', 'a frog', 'frogs', 'animal'], ['penguin', 'a penguin', 'penguins', 'animal'], ['octopus', 'an octopus', 'octopuses', 'animal'],
+  ['bunny', 'a bunny', 'bunnies', 'animal'], ['hamster', 'a hamster', 'hamsters', 'animal'], ['giraffe', 'a giraffe', 'giraffes', 'animal'],
+  ['shark', 'a shark', 'sharks', 'animal'], ['tortoise', 'a tortoise', 'tortoises', 'animal'], ['owl', 'an owl', 'owls', 'animal'],
+  ['elephant', 'an elephant', 'elephants', 'animal'], ['ladybird', 'a ladybird', 'ladybirds', 'animal'], ['snail', 'a snail', 'snails', 'animal'],
+  ['puddle', 'a puddle', 'puddles', 'weather'], ['rainbow', 'a rainbow', 'rainbows', 'weather'], ['snowflake', 'a snowflake', 'snowflakes', 'weather'],
+  ['raindrop', 'a raindrop', 'raindrops', 'weather'], ['cloud', 'a cloud', 'clouds', 'weather'], ['storm', 'a storm', 'storms', 'weather'],
+  ['sunbeam', 'a sunbeam', 'sunbeams', 'weather'],
+  ['pirate', 'a pirate', 'pirates', 'character'], ['wizard', 'a wizard', 'wizards', 'character'], ['fairy', 'a fairy', 'fairies', 'character'],
+  ['monster', 'a monster', 'monsters', 'character'], ['ghost', 'a ghost', 'ghosts', 'character'], ['superhero', 'a superhero', 'superheroes', 'character'],
+  ['alien', 'an alien', 'aliens', 'character'], ['mermaid', 'a mermaid', 'mermaids', 'character'], ['knight', 'a knight', 'knights', 'character'],
+  ['princess', 'a princess', 'princesses', 'character'], ['giant', 'a giant', 'giants', 'character'], ['robot', 'a robot', 'robots', 'character'],
+];
+const LIVING = ['animal', 'character'];
+const CHILDREN = {
+  words: CHILDREN_WORDS.map(([w, np, pl, cat]) => ({ w, x: { np, pl }, cat })),
+  suffixes: [
+    { form: 'saurus', pos: 'n.', gloss: ['a dinosaur that is scared of {s:x}', { t: 'a big, friendly dinosaur that only eats {s:x}', a: ['food'] },
+      { t: 'the biggest {0:x} that ever lived, millions of years ago', a: LIVING }, 'a dinosaur with {x} painted on its tail'] },
+    { form: 'icorn', pos: 'n.', gloss: [{ t: 'a magic horse with {x} on its head', a: ['food', 'thing', 'animal', 'weather', 'character'] },
+      'a unicorn that leaves a trail of {s:x}', { t: 'a unicorn that only comes out during {x}', a: ['event'] }] },
+    { form: 'bot', pos: 'n.', gloss: ['a robot that thinks it is {x}', { t: 'a little robot that tidies away {s:x}', a: ['food', 'thing'] },
+      'a robot that beeps whenever {x} is near'] },
+    { form: 'tastic', pos: 'adj.', gloss: ['as exciting as {x} on a Saturday', 'full of {s:x} from top to bottom',
+      { t: 'so happy you want to dance like {x}', a: LIVING }] },
+    { form: 'zilla', pos: 'n.', gloss: ['a giant {0:x} that only wants a hug', 'a friendly monster made of {s:x}',
+      'a {0:x} as tall as the school'] },
+    { form: 'ville', pos: 'n.', gloss: [{ t: 'a town where everything is made of {s:x}', a: ['food', 'thing'] },
+      { t: 'a land where {s:x} are in charge', a: LIVING }, 'a village where every house is shaped like {x}'] },
+    { form: 'let', pos: 'n.', gloss: ['a teeny-tiny {0:x}', { t: 'a baby {0:x} that fits in your hand', a: LIVING },
+      'a {0:x} as small as a ladybird'] },
+    { form: 'ish', pos: 'adj.', gloss: ['a little bit like {x}', { t: 'as happy as {x} in the sunshine', a: LIVING },
+      { t: 'as wobbly as {x}', a: ['food'] }] },
+    { form: 'nado', pos: 'n.', gloss: ['a whirlwind of {s:x} that spins round the playground',
+      { t: 'a storm where it rains {s:x}', a: ['food', 'thing'] }, { t: 'a twirly dance that makes you dizzy, invented by {s:x}', a: LIVING }] },
+    { form: 'kins', pos: 'n.', gloss: ['a cuddly nickname for {x}', 'the cutest {0:x} in the whole world'] },
+    { form: 'pop', pos: 'n.', gloss: [{ t: 'a lollipop that tastes of {0:x}', a: ['food', 'weather'] }, 'a lollipop shaped like {x}'] },
+    { form: 'ology', pos: 'n.', gloss: ['the very important science of {s:x}', 'a school subject all about {s:x}'] },
+  ],
+  prefixes: [
+    { form: 'mega', gloss: ['{x}, but as big as a house', 'the biggest {0:x} in the whole world'] },
+    { form: 'mini', gloss: ['a {0:x} as small as a button', { t: 'a {0:x} that fits in your lunchbox', a: ['food', 'thing', 'animal'] }] },
+    { form: 'super', gloss: ['{x} with superpowers', '{x} that can fly'] },
+    { form: 'ultra', gloss: ['the fastest {0:x} ever', '{x} that is extra, extra, EXTRA'] },
+    { form: 'un', gloss: ['{x} that goes backwards', 'the exact opposite of {x}'] },
+    { form: 'sky', gloss: ['{x} that lives up in the clouds', 'a {0:x} that floats like a balloon'] },
+    { form: 'sparkle', gloss: ['{x} covered in glitter', 'a {0:x} that glows in the dark'] },
+  ],
+  mixes: [
+    'what you get when {a} meets {b}', '{b} that thinks it is {a}', 'the day {b} and {a} became best friends',
+    { t: '{b} that only eats {s:a}', a: ['food'], b: LIVING },
+    { t: '{b} that turns everything into {s:a}', a: ['food', 'thing', 'weather'], b: LIVING },
+    { t: '{b} where everyone dresses up as {s:a}', a: LIVING, b: ['event'] },
+    { t: '{b} whose best friend is {a}', a: LIVING, b: ['animal', 'character', 'thing'] },
+    { t: '{b} that only appears after {a}', a: ['weather'] },
+    { t: '{b} that tastes like {0:a}', a: ['food', 'weather'], b: ['food'] },
+    { t: '{b} that sings whenever {a} is near', a: ['animal', 'weather'] },
+    { t: '{b} hiding inside {a}', a: ['thing', 'food'], b: LIVING },
+    { t: '{b} that {a} brought back from holiday', a: LIVING, b: ['thing', 'food'] },
+    { t: '{b} that makes {s:a} giggle', a: LIVING, b: ['event', 'food', 'thing'] },
+    { t: '{b} that happens every time {a} sneezes', a: LIVING, b: ['weather', 'event'] },
+    { t: '{b} that grows on {s:a}', a: ['weather', 'thing'], b: ['food'] },
+    { t: '{b} that is scared of {s:a}', a: ['animal', 'food', 'thing'], b: LIVING },
+    { t: '{b} you can only find during {a}', a: ['event'], b: ['animal', 'character', 'food'] },
+    { t: '{b} that leaves {s:a} wherever it goes', a: ['food', 'weather', 'thing'], b: LIVING },
+    { t: '{b} with the bounce of {a}', a: ['animal'], b: ['thing', 'food'] },
+  ],
+  join: joinEn,
+  joinPrefix: (pre, word) => pre + word,
+  mixPos: () => 'n.',
+};
+Object.assign(EXAMPLES, {
+  'ch:saurus': ['{When}, {who} found a {w} {where}.', 'The {w} is the most popular dinosaur at the museum.',
+    'If you see a {w}, wave hello. It is very friendly.', '{Who} drew a {w} and stuck it on the fridge.'],
+  'ch:icorn': ['{Who} wished for a {w} and woke up with one in the garden.', 'Only very kind children ever see a {w}.',
+    '{When}, a {w} trotted past {where}.', 'The {w} winked at {who} and galloped away.'],
+  'ch:bot': ['{Who} built a {w} out of cardboard boxes.', 'The {w} beeped twice and did a little dance.',
+    '{When}, the {w} ran out of batteries {where}.', 'Everyone wants a {w} for their birthday.'],
+  'ch:tastic': ['The party {where} was totally {w}!', '{Who} said today was the most {w} day ever.',
+    'That drawing is absolutely {w}.', '{When}, everything felt {w}.'],
+  'ch:zilla': ['{When}, a {w} stomped through the town, looking for a cuddle.', '{Who} is not scared of the {w} at all.',
+    'The {w} said sorry for knocking over the sandcastle.', 'Shh! The {w} is having a nap {where}.'],
+  'ch:ville': ['{Who} wants to go on holiday to {W}.', 'In {W}, nobody ever has to tidy their room.',
+    'The road to {W} starts {where}.', '{When}, {who} sent a postcard from {W}.'],
+  'ch:let': ['{Who} keeps a {w} in a shoebox.', 'Look at that little {w}! Isn\'t it sweet?',
+    '{When}, a {w} followed {who} home.', 'The {w} is the smallest thing {where}.'],
+  'ch:ish': ['{Who} felt a bit {w} after lunch.', 'The whole class went {w} {where}.',
+    'It was a very {w} sort of day.', '{When}, {who} woke up feeling {w}.'],
+  'ch:nado': ['{When}, a {w} spun {where}, and everyone laughed.', 'The weather man warned of a {w} this afternoon.',
+    '{Who} got caught in a {w} on the way home.', 'After the {w}, there was a lot of tidying up to do.'],
+  'ch:kins': ['{Who} gave the {w} a big goodnight kiss.', 'Come here, little {w}!',
+    '{When}, the {w} curled up {where} and fell asleep.', 'Everybody loves {w}.'],
+  'ch:pop': ['{Who} bought a {w} {where}.', 'You can only get a {w} on very special days.',
+    '{When}, {who} shared a {w} with the whole class.', 'The {w} turned {who}\'s tongue bright blue.'],
+  'ch:ology': ['{Who} wants to study {w} when they grow up.', 'Today\'s {w} lesson was the best one yet.',
+    '{Who} is the class expert in {w}.', '{When}, the whole school did a {w} project.'],
+  'ch:pre': ['{When}, a {w} came to visit {where}.', '{Who} swears they saw a {w} {where}.',
+    'Everyone cheered when the {w} arrived.', 'Have you ever seen a {w}? {Who} has!',
+    'The {w} waved goodbye and went home for tea.', '{Who} drew a picture of a {w} for Granny.',
+    'The {w} is the best thing that ever happened {where}.', '{When}, {who} met a real {w}.'],
+  'ch:mix': ['{Who} found a {w} {where}.', '{When}, a {w} turned up {where}, and nobody could stop smiling.',
+    'The {w} is the best thing in the whole world, says {who}.', 'Nobody believes {who}, but there really is a {w} {where}.',
+    'Shh! If you are very quiet, you might hear a {w}.', '{Who} wrote a story about a {w} and got a gold star.',
+    'At the end of the day, the {w} always says goodnight.', '{When}, {who} made friends with a {w}.',
+    'Do you know what a {w} is? Ask {who}!', 'The {w} was the star of the show {where}.'],
 });
 
 // Everything language-specific. Other languages (lang-fr.js) register a pack with the same shape.
@@ -526,11 +749,11 @@ const EN = {
     'a noise that sounds like a word and might become one'],
   soundsLike: 'sounds like', blend: 'blend of {a} and {b}',
   stopwords: STOPWORDS, stem, tokens: s => s.toLowerCase().match(/[a-z]+/g) || [],
-  describe, example: exampleFor, everyday: EVERYDAY,
+  describe, example: exampleFor, everyday: EVERYDAY, children: CHILDREN,
   fill: (tpl, x, key = 'x') => (typeof x === 'string'
     ? tpl.replaceAll(`{${key}}`, x)
     : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{0:${key}}`, x.np.replace(/^(a|an) /, ''))
-      .replaceAll(`{${key}}`, x.np)),
+      .replaceAll(`{${key}}`, x.np).replace(AN, '$1n ')),
   plural: w => (w.endsWith('ies') ? w.slice(0, -3) + 'y' : /[^su]s$/.test(w) ? w.slice(0, -1) : ''),
   inflected: (w, v) => (w.endsWith('s') && v.has(w.slice(0, -1)))
     || (w.endsWith('es') && v.has(w.slice(0, -2)))
@@ -671,7 +894,8 @@ class Predictionary {
   /** Build one new word, with its meaning and an example sentence.
    *  style: 'everyday' (ordinary words), 'classic' (one root, easy to say) or 'scientific' (stacked roots). */
   predict(style = 'everyday') {
-    if (style === 'everyday' && this.L.everyday) return this.predictEveryday();
+    if (style === 'everyday' && this.L.everyday) return this.predictEveryday(this.L.everyday, 'ev');
+    if (style === 'children' && this.L.children) return this.predictEveryday(this.L.children, 'ch');
     const classic = style === 'classic';
     const L = this.L;
     const candidates = [];
@@ -720,10 +944,10 @@ class Predictionary {
     return syllables <= 4 && maxRun <= 2 && w.length <= 12;
   }
 
-  /** Everyday style: an ordinary word plus an everyday ending, or two ordinary words blended together. */
-  predictEveryday() {
+  /** Everyday and Children styles: an ordinary word plus an ending or a prefix, or two words blended together.
+   *  E is the word set (L.everyday or L.children); tag prefixes its sentence keys ("ev:ish", "ch:saurus"). */
+  predictEveryday(E, tag) {
     const L = this.L;
-    const E = L.everyday;
     const weights = { mix: 0.45, suffix: 0.35, prefix: E.prefixes ? 0.2 : 0 };
     if (this.lastKind) weights[this.lastKind] *= 0.3; // rarely the same pattern twice in a row
     let r = Math.random() * (weights.mix + weights.suffix + weights.prefix);
@@ -738,19 +962,19 @@ class Predictionary {
     for (let tries = 0; candidates.length < 8 && tries < 300; tries++) {
       if (kind === 'suffix') {
         const word = pick(E.words);
-        const suf = pick(E.suffixes.filter(s => !this.recentSuffixes.includes(`ev:${s.form}`)));
+        const suf = pick(E.suffixes.filter(s => !this.recentSuffixes.includes(`${tag}:${s.form}`)));
         const fem = suf.fem && word.x.g === 'f';
         const form = fem ? suf.fem : suf.form;
         const w = E.join(word.w, form);
         if (w === word.w || this.isKnown(w) || !this.easyToSay(w)) continue;
-        candidates.push({ w, key: `ev:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: word.x,
+        candidates.push({ w, key: `${tag}:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: word.x,
           definition: L.fill(gloss(suf.gloss, word), word.x), recipe: `${word.w} + -${form}` });
       } else if (kind === 'prefix') {
         const word = pick(E.words);
-        const pre = pick(E.prefixes.filter(p => !this.recentSuffixes.includes(`ev:pre:${p.form}`)));
+        const pre = pick(E.prefixes.filter(p => !this.recentSuffixes.includes(`${tag}:pre:${p.form}`)));
         const w = E.joinPrefix(pre.form, word.w);
         if (this.isKnown(w) || !this.easyToSay(w)) continue;
-        candidates.push({ w, key: 'ev:pre', tag: `ev:pre:${pre.form}`, pos: E.mixPos(word), core: word.x,
+        candidates.push({ w, key: `${tag}:pre`, tag: `${tag}:pre:${pre.form}`, pos: E.mixPos(word), core: word.x,
           definition: L.fill(gloss(pre.gloss, word), word.x), recipe: `${pre.form}- + ${word.w}` });
       } else {
         const fresh = E.mixes.filter(m => !this.recentMixes.includes(m));
@@ -766,7 +990,7 @@ class Predictionary {
         }
         if (!options.length) continue;
         const o = pick(options.slice(0, 2));
-        candidates.push({ w: o.w, key: 'ev:mix', pos: E.mixPos(b), core: b.x, mix,
+        candidates.push({ w: o.w, key: `${tag}:mix`, pos: E.mixPos(b), core: b.x, mix,
           definition: L.fill(L.fill(mix.t || mix, a.x, 'a'), b.x, 'b'), recipe: o.recipe });
       }
     }
