@@ -32,13 +32,18 @@
 
   // {un:x} "une sieste", {dun:x} "d'une sieste": indefinite forms of a noun phrase.
   const un = x => `${x.pl ? 'des' : x.g === 'f' ? 'une' : 'un'} ${render({ ...x, art: '' })}`;
+  const nounPlural = n => (/[sxz]$/.test(n) ? n : /(eau|eu)$/.test(n) ? `${n}x` : /al$/.test(n) ? `${n.slice(0, -2)}aux` : `${n}s`);
 
+  // Extra tokens: {e:x} agreement ("gâché{e:b}"), {qun:x} "qu'un chat", {0s:x} bare plural "pigeons".
   function fill(tpl, x, key = 'x') {
     const s = typeof x === 'string' ? x : render(x);
     const bare = typeof x === 'string' ? x.replace(/^(le |la |les |l')/, '') : render({ ...x, art: '' });
     const indef = typeof x === 'string' ? x : un(x);
+    const e = typeof x === 'string' ? '' : (x.g === 'f' ? 'e' : '') + (x.pl ? 's' : '');
     return tpl.replaceAll(`{de:${key}}`, de(s)).replaceAll(`{a:${key}}`, a(s))
       .replaceAll(`{un:${key}}`, indef).replaceAll(`{dun:${key}}`, x.pl ? `de ${bare}` : de(indef))
+      .replaceAll(`{qun:${key}}`, x.pl ? `que ${indef}` : `qu'${indef}`).replaceAll(`{e:${key}}`, e)
+      .replaceAll(`{0s:${key}}`, typeof x === 'string' ? x : nounPlural(x.noun))
       .replaceAll(`{d0:${key}}`, de(bare)).replaceAll(`{0:${key}}`, bare).replaceAll(`{${key}}`, s);
   }
 
@@ -328,40 +333,95 @@
     const who = pick(WHO);
     return fill(t, core)
       .replaceAll('{Le:w}', upperFirst(le)).replaceAll('{le:w}', le).replaceAll('{un:w}', `${fem ? 'une' : 'un'} ${w}`)
-      .replaceAll('{de:w}', de(le)).replaceAll('{a:w}', a(le)).replaceAll('{d:w}', de(w)).replaceAll('{w}', w)
+      .replaceAll('{de:w}', de(le)).replaceAll('{a:w}', a(le)).replaceAll('{d:w}', de(w))
+      .replaceAll('{W}', upperFirst(w)).replaceAll('{w}s', nounPlural(w)).replaceAll('{w}', w)
       .replaceAll('{Who}', who).replaceAll('{who}', lowerFirst(who))
       .replaceAll('{where}', pick(WHERE)).replaceAll('{When}', pick(WHEN))
       .replace(/(^|\s)([Qq]u|[Dd])e (?=[aeiouyàâéèêîôûœ])/g, "$1$2'"); // "que un pilote" -> "qu'un pilote"
   }
 
-  // Everyday style. [word, article, noun, gender, is an event]
+  // Everyday style. [word, article, gender, type: day | event | food | thing | tech | animal | weather]
   const EVERYDAY_WORDS = [
-    ['lundi', 'le', 'm', 1], ['sieste', 'la', 'f', 1], ['canapé', 'le', 'm'], ['réunion', 'la', 'f', 1],
-    ['chaussette', 'la', 'f'], ['parapluie', 'le', 'm'], ['sandwich', 'le', 'm'], ['playlist', 'la', 'f'],
-    ['selfie', 'le', 'm'], ['chat', 'le', 'm'], ['pizza', 'la', 'f'], ['café', 'le', 'm'], ['nuage', 'le', 'm'],
-    ['flaque', 'la', 'f'], ['métro', 'le', 'm'], ['apéro', 'le', 'm', 1], ['oreiller', 'le', 'm'], ['goûter', 'le', 'm', 1],
-    ['batterie', 'la', 'f'], ['podcast', 'le', 'm'], ['croissant', 'le', 'm'], ['mème', 'le', 'm'], ['câlin', 'le', 'm'],
-    ['bruine', 'la', 'f', 1], ['dimanche', 'le', 'm', 1], ['biscuit', 'le', 'm'], ['karaoké', 'le', 'm', 1],
-    ['frigo', 'le', 'm'], ['bus', 'le', 'm'], ['potin', 'le', 'm'], ['lessive', 'la', 'f'], ['boulot', 'le', 'm'],
-    ['bouchon', 'le', 'm', 1], ['raclette', 'la', 'f', 1], ['baguette', 'la', 'f'], ['grève', 'la', 'f', 1],
-    ['tableur', 'le', 'm'], ['courriel', 'le', 'm'], ['plaid', 'le', 'm'], ['trottinette', 'la', 'f'],
+    ['lundi', 'le', 'm', 'day'], ['dimanche', 'le', 'm', 'day'], ['vendredi', 'le', 'm', 'day'], ['mercredi', 'le', 'm', 'day'],
+    ['anniversaire', 'le', 'm', 'day'], ['réveillon', 'le', 'm', 'day'],
+    ['sieste', 'la', 'f', 'event'], ['réunion', 'la', 'f', 'event'], ['apéro', 'le', 'm', 'event'], ['karaoké', 'le', 'm', 'event'],
+    ['câlin', 'le', 'm', 'event'], ['grève', 'la', 'f', 'event'], ['bouchon', 'le', 'm', 'event'], ['boulot', 'le', 'm', 'event'],
+    ['lessive', 'la', 'f', 'event'], ['potin', 'le', 'm', 'event'], ['mariage', 'le', 'm', 'event'], ['barbecue', 'le', 'm', 'event'],
+    ['hoquet', 'le', 'm', 'event'], ['bâillement', 'le', 'm', 'event'], ['ménage', 'le', 'm', 'event'], ['goûter', 'le', 'm', 'event'],
+    ['sandwich', 'le', 'm', 'food'], ['pizza', 'la', 'f', 'food'], ['café', 'le', 'm', 'food'], ['croissant', 'le', 'm', 'food'],
+    ['biscuit', 'le', 'm', 'food'], ['raclette', 'la', 'f', 'food'], ['baguette', 'la', 'f', 'food'], ['crêpe', 'la', 'f', 'food'],
+    ['gaufre', 'la', 'f', 'food'], ['tartine', 'la', 'f', 'food'], ['nouille', 'la', 'f', 'food'], ['fromage', 'le', 'm', 'food'],
+    ['chocolat', 'le', 'm', 'food'], ['éclair', 'le', 'm', 'food'], ['cornichon', 'le', 'm', 'food'],
+    ['canapé', 'le', 'm', 'thing'], ['chaussette', 'la', 'f', 'thing'], ['parapluie', 'le', 'm', 'thing'], ['oreiller', 'le', 'm', 'thing'],
+    ['frigo', 'le', 'm', 'thing'], ['bus', 'le', 'm', 'thing'], ['plaid', 'le', 'm', 'thing'], ['trottinette', 'la', 'f', 'thing'],
+    ['métro', 'le', 'm', 'thing'], ['armoire', 'la', 'f', 'thing'], ['chausson', 'le', 'm', 'thing'], ['mug', 'le', 'm', 'thing'],
+    ['cartable', 'le', 'm', 'thing'], ['ascenseur', 'le', 'm', 'thing'], ['bouilloire', 'la', 'f', 'thing'], ['ballon', 'le', 'm', 'thing'],
+    ['playlist', 'la', 'f', 'tech'], ['selfie', 'le', 'm', 'tech'], ['batterie', 'la', 'f', 'tech'], ['podcast', 'le', 'm', 'tech'],
+    ['mème', 'le', 'm', 'tech'], ['tableur', 'le', 'm', 'tech'], ['courriel', 'le', 'm', 'tech'], ['chargeur', 'le', 'm', 'tech'],
+    ['émoji', 'le', 'm', 'tech'], ['imprimante', 'la', 'f', 'tech'], ['ordi', 'le', 'm', 'tech'], ['notif', 'la', 'f', 'tech'],
+    ['wifi', 'le', 'm', 'tech'],
+    ['chat', 'le', 'm', 'animal'], ['chien', 'le', 'm', 'animal'], ['pigeon', 'le', 'm', 'animal'], ['hamster', 'le', 'm', 'animal'],
+    ['pingouin', 'le', 'm', 'animal'], ['lama', 'le', 'm', 'animal'], ['écureuil', 'le', 'm', 'animal'], ['canard', 'le', 'm', 'animal'],
+    ['escargot', 'le', 'm', 'animal'],
+    ['nuage', 'le', 'm', 'weather'], ['flaque', 'la', 'f', 'weather'], ['bruine', 'la', 'f', 'weather'], ['orage', 'le', 'm', 'weather'],
+    ['brouillard', 'le', 'm', 'weather'], ['flocon', 'le', 'm', 'weather'], ['canicule', 'la', 'f', 'weather'],
+    ['grêle', 'la', 'f', 'weather'], ['averse', 'la', 'f', 'weather'],
   ];
+  // Meanings for blends: a = the first word, b = the second (the head); a/b list the word types that fit.
   const EVERYDAY = {
-    words: EVERYDAY_WORDS.map(([w, art, g, event]) => ({ w, x: np(art, w, g), event: !!event })),
+    words: EVERYDAY_WORDS.map(([w, art, g, cat]) => ({ w, x: np(art, w, g), cat })),
     suffixes: [
-      { form: 'esque', pos: 'adj.', gloss: "qui a toute l'énergie {dun:x}" },
-      { form: 'ette', pos: 'n.f.', gloss: 'une toute petite version {dun:x}' },
-      { form: 'ade', pos: 'n.f.', gloss: "une grande fête en l'honneur {de:x}" },
-      { form: 'iste', pos: 'n.m.', gloss: "quelqu'un qui ne vit que pour {x}" },
-      { form: 'ifier', pos: 'v.', gloss: "transformer n'importe quoi en {0:x}" },
-      { form: 'erie', pos: 'n.f.', gloss: 'une boutique entièrement consacrée {a:x}' },
-      { form: 'core', pos: 'n.m.', gloss: 'une esthétique entièrement construite autour {de:x}' },
-      { form: 'ouille', pos: 'n.f.', gloss: 'un petit coup de mou causé par {x}' },
-      { form: 'isme', pos: 'n.m.', gloss: 'la conviction que tout va mieux avec {un:x}' },
+      { form: 'esque', pos: 'adj.', gloss: ["qui a toute l'énergie {dun:x}", 'qui rappelle vaguement {un:x}'] },
+      { form: 'ette', pos: 'n.f.', gloss: ['une toute petite version {dun:x}',
+        { t: '{un:x} qui tient dans la poche', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
+      { form: 'ade', pos: 'n.f.', gloss: ["une grande fête en l'honneur {de:x}", 'une bataille rangée à coups {d0:x}'] },
+      { form: 'iste', pos: 'n.m.', gloss: ["quelqu'un qui ne vit que pour {x}", 'un collectionneur passionné {d0:x}'] },
+      { form: 'ifier', pos: 'v.', gloss: ["transformer n'importe quoi en {0:x}", 'ajouter un peu trop {d0:x} à quelque chose'] },
+      { form: 'erie', pos: 'n.f.', gloss: ['une boutique entièrement consacrée {a:x}', 'une petite fabrique artisanale {d0:x}'] },
+      { form: 'core', pos: 'n.m.', gloss: ['une esthétique entièrement construite autour {de:x}', 'un genre musical qui ne parle que {de:x}'] },
+      { form: 'ouille', pos: 'n.f.', gloss: ['un petit coup de mou causé par {x}', "l'état de fatigue qui suit {un:x}"] },
+      { form: 'isme', pos: 'n.m.', gloss: ['la conviction que tout va mieux avec {un:x}', 'un parti politique qui promet {un:x} pour tous'] },
+      { form: 'nado', pos: 'n.f.', gloss: ['une tornade soudaine de {0s:x}', 'la pagaille qui arrive quand il y a beaucoup trop de {0s:x}'] },
+      { form: 'ville', pos: 'n.f.', gloss: ['une ville où tout tourne autour {de:x}', "le petit coin de la tête où l'on pense {a:x}"] },
+      { form: 'logie', pos: 'n.f.', gloss: ["l'étude très sérieuse {de:x}", "un diplôme que personne n'a demandé, entièrement consacré {a:x}"] },
+      { form: 'tastique', pos: 'adj.', gloss: ['aussi génial que {un:x} un vendredi', 'débordant de {0s:x}'] },
+      { form: 'zilla', pos: 'n.m.', gloss: ['un monstre entièrement fait de {0s:x}', '{un:x} qui a beaucoup trop grandi'] },
     ],
-    mixes: ['{un:b} qui finit toujours en {0:a}', "{un:b} avec toute l'énergie {dun:a}",
-      'ce qui se passe quand {a} croise {b}', { t: "l'impression {dun:a} au beau milieu {dun:b}", event: true }],
+    prefixes: [
+      { form: 'méga', gloss: ['{un:x} géant{e:x}', "{un:x} dont on parlera encore dans dix ans"] },
+      { form: 'mini', gloss: ['{un:x} en miniature',
+        { t: '{un:x} assez petit{e:x} pour tenir dans la main', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
+      { form: 'sur', gloss: ['beaucoup trop {d0:x}', { t: '{un:x} qui a duré beaucoup trop longtemps', a: ['event'] }] },
+      { form: 'anti', gloss: ["l'exact opposé {dun:x}", 'un produit qui protège des {0s:x}'] },
+      { form: 're', gloss: ['{un:x}, une fois de plus', "{un:x} de plus, que personne n'avait demandé{e:x}"] },
+      { form: 'super', gloss: ['{un:x} avec des super-pouvoirs', '{un:x} hors du commun'] },
+      { form: 'dé', gloss: ['la sensation {dun:x} qui disparaît', "tout ce qui n'est vraiment pas {un:x}"] },
+      { form: 'demi', gloss: ['moitié {0:x}, moitié autre chose', "{un:x} qui ne marche qu'à moitié"] },
+    ],
+    mixes: [
+      '{un:b} qui finit toujours en {0:a}', 'ce qui se passe quand {a} croise {b}', "{un:b} avec toute l'énergie {dun:a}",
+      "le moment où l'on comprend que {b} est en fait {un:a}",
+      { t: '{un:b} avec {un:a} pour seul repas', a: ['food'], b: ['event'] },
+      { t: "{un:a} dont on n'a besoin que pendant {un:b}", a: ['thing'], b: ['event'] },
+      { t: '{un:b} gâché{e:b} par {un:a}', a: ['weather'], b: ['event'] },
+      { t: '{un:b} dont {un:a} a pris possession', a: ['animal'], b: ['thing'] },
+      { t: '{un:b} passé{e:b} les yeux rivés sur {un:a}', a: ['tech'], b: ['event'] },
+      { t: "l'impression {dun:a} au beau milieu {dun:b}", a: ['event'], b: ['event'] },
+      { t: '{un:b} qui sent toujours un peu {a}', a: ['food'], b: ['thing'] },
+      { t: "{un:b} qu'on retrouve toujours à la place {dun:a}", a: ['thing'], b: ['thing'] },
+      { t: '{un:b} sous le regard {dun:a}', a: ['animal'], b: ['event'] },
+      { t: "{un:b} qu'il faut recharger plus souvent {qun:a}", a: ['tech'], b: ['thing'] },
+      { t: '{un:b} qui surgit de nulle part, comme {un:a}', a: ['weather'] },
+      { t: "{un:b} qui a un drôle de goût {d0:a}", b: ['food'] },
+      { t: "{un:b} qui n'a de sens que {a}", a: ['day'] },
+      { t: '{un:b} {qun:a} a déjà léché{e:b}', a: ['animal'], b: ['food'] },
+      { t: '{un:b} qui a appris à se servir {dun:a}', a: ['tech'], b: ['animal'] },
+      { t: "{un:b} qu'on ne retrouve qu'après {un:a}", a: ['weather'], b: ['thing'] },
+      { t: '{un:b} prêt{e:b} à tout pour {un:a}', a: ['food'], b: ['animal'] },
+      { t: '{un:b} qui semble durer une semaine à cause {dun:a}', b: ['day'] },
+    ],
     join: (word, suffix) => (/[aeiouy]$/.test(word) && /^[aeiouy]/.test(suffix) ? word.slice(0, -1) : word) + suffix,
+    joinPrefix: (pre, word) => (pre === 're' && /^[aeiouyéè]/.test(word) ? `ré${word}` : pre + word),
     mixPos: b => (b.x.g === 'f' ? 'n.f.' : 'n.m.'),
   };
   Object.assign(EXAMPLES, {
@@ -374,8 +434,23 @@
     'ev:core': ['{When}, {le:w} a envahi tous les cafés {where}.', "Son appartement, c'est du {w} pur jus, jusqu'aux rideaux."],
     'ev:ouille': ['{Who} a eu une sacrée {w} {where}.', "Rien de tel qu'une sieste pour soigner une {w}."],
     'ev:isme': ["{Who} prêche {le:w} à qui veut l'entendre.", '{When}, {le:w} est devenu la religion officieuse de la ville.'],
+    'ev:nado': ["{When}, une {w} s'est abattue sur la ville et personne n'est allé travailler.", 'La météo annonce une {w} {where}.'],
+    'ev:ville': ['{Who} vit à {W} depuis des années.', 'Bienvenue à {W}, où tout le monde se connaît.'],
+    'ev:logie': ['{Who} a un doctorat en {w}.', 'Le département de {w} {where} compte un professeur et trois chats.'],
+    'ev:tastique': ['La fête {where} était absolument {w}.', '{Who} trouve le nouveau menu complètement {w}.'],
+    'ev:zilla': ['{When}, {who} a créé un {w} par accident.', 'Le {w} a été aperçu pour la dernière fois {where}.'],
+    'ev:pre': ["Personne n'était prêt pour {le:w} {where}.", '{Who} parle encore {de:w} de 1987.',
+      '{When}, {un:w} a tout changé.', 'Si vous croisez {un:w}, restez calme et reculez lentement.',
+      '{Who} jure avoir vu {un:w} {where}.', 'Le journal local a consacré une page entière {a:w}.',
+      'Il y a eu {un:w} {where}, et les photos sont incroyables.', 'Tout le monde a une histoire de {w} à raconter.'],
     'ev:mix': ["{Who} a inventé {le:w} {where}, et depuis, plus personne ne s'en passe.",
-      "{When}, tout le monde s'est mis à parler {de:w}.", "Demandez à n'importe qui {where} : tout le monde a une histoire de {w}."],
+      "{When}, tout le monde s'est mis à parler {de:w}.", "Demandez à n'importe qui {where} : tout le monde a une histoire de {w}.",
+      'Rien ne gâche un après-midi tranquille comme {un:w} surprise.',
+      '{Who} jure que {le:w} est ce qui est arrivé de mieux {where} depuis des années.',
+      "Il n'existe aucune façon polie d'expliquer {un:w} à son patron.",
+      "{When}, {who} a posté une photo {de:w} et elle a fait le tour d'Internet.",
+      "Dans chaque bureau, il y a au moins {un:w}, et tout le monde fait semblant de ne rien remarquer.",
+      "{Who} collectionne les {w}s depuis l'enfance.", "Vous n'avez rien vécu tant que vous n'avez pas connu {un:w} {where}."],
   });
 
   // Endings for Invent words built on a real word ("pauvre" + "isme"). {b} is the real word.

@@ -1,5 +1,5 @@
 // Cache-first so the app works offline. Bump CACHE whenever any file below changes, or phones keep the old copy.
-const CACHE = 'predictionary-v11';
+const CACHE = 'predictionary-v12';
 const FILES = ['./', 'index.html', 'engine.js', 'lang-fr.js', 'lang-es.js', 'words.txt', 'common.txt',
   'words-fr.txt', 'common-fr.txt', 'lemmas-fr.txt', 'words-es.txt', 'common-es.txt', 'lemmas-es.txt',
   'manifest.webmanifest', 'icon-180.png', 'icon-512.png'];

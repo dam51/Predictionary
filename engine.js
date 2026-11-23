@@ -377,27 +377,51 @@ function exampleFor(key, w, x) {
   if (recentTemplates.length > 12) recentTemplates.shift();
   const who = pick(WHO);
   const xs = typeof x === 'string' ? { np: x, pl: x } : x;
-  return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{s:x}', xs.pl).replaceAll('{x}', xs.np)
+  return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{s:x}', xs.pl)
+    .replaceAll('{0:x}', xs.np.replace(/^(a|an) /, '')).replaceAll('{x}', xs.np)
     .replaceAll('{Who}', who).replaceAll('{who}', lowerFirst(who))
     .replaceAll('{where}', pick(WHERE)).replaceAll('{When}', pick(WHEN))
     .replace(/\b([Aa]) (?=[aeiou])/g, '$1n ');
 }
 
-// Everyday style: blends and everyday endings on ordinary words. [word, as a noun phrase, plural]
+// Everyday style: blends, everyday endings and prefixes on ordinary words.
+// [word, as a noun phrase, plural, type: day | event | food | thing | tech | animal | weather]
 const EVERYDAY_WORDS = [
-  ['monday', 'a Monday', 'Mondays'], ['nap', 'a nap', 'naps'], ['sofa', 'a sofa', 'sofas'],
-  ['meeting', 'a meeting', 'meetings'], ['inbox', 'an inbox', 'inboxes'], ['sock', 'a sock', 'socks'],
-  ['queue', 'a queue', 'queues'], ['umbrella', 'an umbrella', 'umbrellas'], ['sandwich', 'a sandwich', 'sandwiches'],
-  ['holiday', 'a holiday', 'holidays'], ['playlist', 'a playlist', 'playlists'], ['selfie', 'a selfie', 'selfies'],
-  ['toaster', 'a toaster', 'toasters'], ['cat', 'a cat', 'cats'], ['pizza', 'a pizza', 'pizzas'],
-  ['coffee', 'a coffee', 'coffees'], ['cloud', 'a cloud', 'clouds'], ['puddle', 'a puddle', 'puddles'],
-  ['commute', 'a commute', 'commutes'], ['deadline', 'a deadline', 'deadlines'], ['weekend', 'a weekend', 'weekends'],
-  ['password', 'a password', 'passwords'], ['pillow', 'a pillow', 'pillows'], ['snack', 'a snack', 'snacks'],
-  ['battery', 'a battery', 'batteries'], ['podcast', 'a podcast', 'podcasts'], ['breakfast', 'a breakfast', 'breakfasts'],
-  ['meme', 'a meme', 'memes'], ['hug', 'a hug', 'hugs'], ['email', 'an email', 'emails'], ['drizzle', 'a drizzle', 'drizzles'],
-  ['picnic', 'a picnic', 'picnics'], ['sunday', 'a Sunday', 'Sundays'], ['biscuit', 'a biscuit', 'biscuits'],
-  ['fridge', 'a fridge', 'fridges'], ['bus', 'a bus', 'buses'], ['spreadsheet', 'a spreadsheet', 'spreadsheets'],
-  ['doughnut', 'a doughnut', 'doughnuts'], ['blanket', 'a blanket', 'blankets'], ['traffic', 'a traffic jam', 'traffic jams'],
+  ['monday', 'a Monday', 'Mondays', 'day'], ['sunday', 'a Sunday', 'Sundays', 'day'], ['friday', 'a Friday', 'Fridays', 'day'],
+  ['weekend', 'a weekend', 'weekends', 'day'], ['birthday', 'a birthday', 'birthdays', 'day'],
+  ['holiday', 'a holiday', 'holidays', 'day'],
+  ['nap', 'a nap', 'naps', 'event'], ['meeting', 'a meeting', 'meetings', 'event'], ['commute', 'a commute', 'commutes', 'event'],
+  ['deadline', 'a deadline', 'deadlines', 'event'], ['picnic', 'a picnic', 'picnics', 'event'],
+  ['queue', 'a queue', 'queues', 'event'], ['hug', 'a hug', 'hugs', 'event'], ['traffic', 'a traffic jam', 'traffic jams', 'event'],
+  ['wedding', 'a wedding', 'weddings', 'event'], ['barbecue', 'a barbecue', 'barbecues', 'event'],
+  ['hiccup', 'a hiccup', 'hiccups', 'event'], ['sneeze', 'a sneeze', 'sneezes', 'event'], ['yawn', 'a yawn', 'yawns', 'event'],
+  ['haircut', 'a haircut', 'haircuts', 'event'], ['karaoke', 'a karaoke night', 'karaoke nights', 'event'],
+  ['sandwich', 'a sandwich', 'sandwiches', 'food'], ['pizza', 'a pizza', 'pizzas', 'food'], ['coffee', 'a coffee', 'coffees', 'food'],
+  ['snack', 'a snack', 'snacks', 'food'], ['breakfast', 'a breakfast', 'breakfasts', 'food'],
+  ['biscuit', 'a biscuit', 'biscuits', 'food'], ['doughnut', 'a doughnut', 'doughnuts', 'food'],
+  ['croissant', 'a croissant', 'croissants', 'food'], ['noodle', 'a noodle', 'noodles', 'food'],
+  ['pancake', 'a pancake', 'pancakes', 'food'], ['cupcake', 'a cupcake', 'cupcakes', 'food'], ['waffle', 'a waffle', 'waffles', 'food'],
+  ['muffin', 'a muffin', 'muffins', 'food'], ['taco', 'a taco', 'tacos', 'food'], ['pickle', 'a pickle', 'pickles', 'food'],
+  ['sofa', 'a sofa', 'sofas', 'thing'], ['sock', 'a sock', 'socks', 'thing'], ['umbrella', 'an umbrella', 'umbrellas', 'thing'],
+  ['toaster', 'a toaster', 'toasters', 'thing'], ['pillow', 'a pillow', 'pillows', 'thing'], ['fridge', 'a fridge', 'fridges', 'thing'],
+  ['bus', 'a bus', 'buses', 'thing'], ['blanket', 'a blanket', 'blankets', 'thing'], ['mug', 'a mug', 'mugs', 'thing'],
+  ['slipper', 'a slipper', 'slippers', 'thing'], ['backpack', 'a backpack', 'backpacks', 'thing'],
+  ['scooter', 'a scooter', 'scooters', 'thing'], ['wardrobe', 'a wardrobe', 'wardrobes', 'thing'], ['lift', 'a lift', 'lifts', 'thing'],
+  ['kettle', 'a kettle', 'kettles', 'thing'], ['balloon', 'a balloon', 'balloons', 'thing'],
+  ['inbox', 'an inbox', 'inboxes', 'tech'], ['playlist', 'a playlist', 'playlists', 'tech'], ['selfie', 'a selfie', 'selfies', 'tech'],
+  ['password', 'a password', 'passwords', 'tech'], ['battery', 'a battery', 'batteries', 'tech'],
+  ['podcast', 'a podcast', 'podcasts', 'tech'], ['meme', 'a meme', 'memes', 'tech'], ['email', 'an email', 'emails', 'tech'],
+  ['spreadsheet', 'a spreadsheet', 'spreadsheets', 'tech'], ['charger', 'a charger', 'chargers', 'tech'],
+  ['laptop', 'a laptop', 'laptops', 'tech'], ['emoji', 'an emoji', 'emojis', 'tech'], ['router', 'a router', 'routers', 'tech'],
+  ['notification', 'a notification', 'notifications', 'tech'], ['printer', 'a printer', 'printers', 'tech'],
+  ['cat', 'a cat', 'cats', 'animal'], ['dog', 'a dog', 'dogs', 'animal'], ['pigeon', 'a pigeon', 'pigeons', 'animal'],
+  ['goldfish', 'a goldfish', 'goldfish', 'animal'], ['hamster', 'a hamster', 'hamsters', 'animal'],
+  ['penguin', 'a penguin', 'penguins', 'animal'], ['llama', 'a llama', 'llamas', 'animal'],
+  ['squirrel', 'a squirrel', 'squirrels', 'animal'], ['duck', 'a duck', 'ducks', 'animal'],
+  ['cloud', 'a cloud', 'clouds', 'weather'], ['puddle', 'a puddle', 'puddles', 'weather'], ['drizzle', 'a drizzle', 'drizzles', 'weather'],
+  ['thunderstorm', 'a thunderstorm', 'thunderstorms', 'weather'], ['rainbow', 'a rainbow', 'rainbows', 'weather'],
+  ['snowflake', 'a snowflake', 'snowflakes', 'weather'], ['heatwave', 'a heatwave', 'heatwaves', 'weather'],
+  ['hailstorm', 'a hailstorm', 'hailstorms', 'weather'],
 ];
 
 function joinEn(word, suffix) {
@@ -406,24 +430,62 @@ function joinEn(word, suffix) {
   return word + suffix;
 }
 
+// Meanings for blends: a = the first word, b = the second (the head); a/b list the word types that fit.
 const EVERYDAY = {
-  words: EVERYDAY_WORDS.map(([w, np, pl]) => ({ w, x: { np, pl },
-    event: 'monday nap meeting holiday commute deadline weekend breakfast picnic sunday drizzle traffic'.split(' ').includes(w) })),
+  words: EVERYDAY_WORDS.map(([w, np, pl, cat]) => ({ w, x: { np, pl }, cat })),
   suffixes: [
-    { form: 'ish', pos: 'adj.', gloss: 'feeling a bit like {x}' },
-    { form: 'core', pos: 'n.', gloss: 'an aesthetic built entirely around {s:x}' },
-    { form: 'ify', pos: 'v.', gloss: 'to make anything feel like {x}' },
-    { form: 'ster', pos: 'n.', gloss: 'someone who lives for {s:x}' },
-    { form: 'fest', pos: 'n.', gloss: 'a day-long celebration of {s:x}' },
-    { form: 'less', pos: 'adj.', gloss: 'stuck without {x}' },
-    { form: 'aholic', pos: 'n.', gloss: 'someone who cannot stop thinking about {s:x}' },
-    { form: 'ery', pos: 'n.', gloss: 'a shop that sells nothing but {s:x}' },
-    { form: 'ism', pos: 'n.', gloss: 'the belief that everything is better with {x}' },
+    { form: 'ish', pos: 'adj.', gloss: ['feeling a bit like {x}', 'not quite {x}, but close'] },
+    { form: 'core', pos: 'n.', gloss: ['an aesthetic built entirely around {s:x}', 'a music genre that only sings about {s:x}'] },
+    { form: 'ify', pos: 'v.', gloss: ['to make anything feel like {x}', 'to add a little too much {0:x} to something'] },
+    { form: 'ster', pos: 'n.', gloss: ['someone who lives for {s:x}', 'a person who always knows where the best {s:x} are'] },
+    { form: 'fest', pos: 'n.', gloss: ['a day-long celebration of {s:x}', 'a party where everyone has to bring {x}'] },
+    { form: 'less', pos: 'adj.', gloss: ['stuck without {x}', 'having lost {x} and refusing to talk about it'] },
+    { form: 'aholic', pos: 'n.', gloss: ['someone who cannot stop thinking about {s:x}', 'a person who owns far too many {s:x}'] },
+    { form: 'ery', pos: 'n.', gloss: ['a shop that sells nothing but {s:x}', 'a small workshop where {s:x} are made by hand'] },
+    { form: 'ism', pos: 'n.', gloss: ['the belief that everything is better with {x}', 'a political movement promising {s:x} for all'] },
+    { form: 'nado', pos: 'n.', gloss: ['a sudden swirling storm of {s:x}', 'the chaos that follows when there are far too many {s:x}'] },
+    { form: 'ville', pos: 'n.', gloss: ['a town where everything revolves around {s:x}', 'the place your mind wanders to when you think about {s:x}'] },
+    { form: 'ology', pos: 'n.', gloss: ['the very serious study of {s:x}', 'a degree nobody asked for, entirely about {s:x}'] },
+    { form: 'tastic', pos: 'adj.', gloss: ['as good as {x} on a Friday', 'unbelievably full of {s:x}'] },
+    { form: 'zilla', pos: 'n.', gloss: ['a monster made entirely of {s:x}', '{x} that has grown far too big'] },
+    { form: 'let', pos: 'n.', gloss: ['a tiny, adorable {0:x}',
+      { t: 'a {0:x} small enough to fit in a pocket', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
   ],
-  // { t, event: true } = the {b} word must be an event ("in the middle of a toaster" makes no sense)
-  mixes: ['{b} that somehow turns into {a}', { t: 'the feeling of {a} in the middle of {b}', event: true },
-    '{b} with the energy of {a}', 'what you get when {a} meets {b}'],
+  prefixes: [
+    { form: 'mega', gloss: ['{x}, but enormous', 'the biggest {0:x} anyone has ever seen'] },
+    { form: 'mini', gloss: ['a miniature {0:x}',
+      { t: 'a {0:x} small enough to fit in your hand', a: ['food', 'thing', 'tech', 'animal', 'weather'] }] },
+    { form: 'over', gloss: ['far too much {0:x}', { t: '{x} that went on for far too long', a: ['event'] }] },
+    { form: 'anti', gloss: ['the exact opposite of {x}', 'something designed to protect you from {s:x}'] },
+    { form: 're', gloss: ['{x}, all over again', 'a second {0:x} nobody asked for'] },
+    { form: 'super', gloss: ['{x} with superpowers', 'the best {0:x} of the year'] },
+    { form: 'un', gloss: ['the feeling of {x} slowly disappearing', 'something that is definitely not {x}'] },
+    { form: 'semi', gloss: ['half {x}, half something else', '{x} that only half works'] },
+  ],
+  mixes: [
+    '{b} that somehow turns into {a}', 'what you get when {a} meets {b}', '{b} with the energy of {a}',
+    'the moment you realise {b} is really {a}',
+    { t: '{b} with {a} as the only meal', a: ['food'], b: ['event'] },
+    { t: 'the {0:a} you only ever need during {b}', a: ['thing'], b: ['event'] },
+    { t: '{b} ruined by {a}', a: ['weather'], b: ['event'] },
+    { t: '{b} that {a} has quietly claimed as its own', a: ['animal'], b: ['thing'] },
+    { t: '{b} spent staring at {a}', a: ['tech'], b: ['event'] },
+    { t: 'the feeling of {a} in the middle of {b}', a: ['event'], b: ['event'] },
+    { t: '{b} that always smells faintly of {0:a}', a: ['food'], b: ['thing'] },
+    { t: '{b} that keeps turning up where {a} should be', a: ['thing'], b: ['thing'] },
+    { t: '{b} with {a} watching your every move', a: ['animal'], b: ['event'] },
+    { t: '{b} that needs charging more often than {a}', a: ['tech'], b: ['thing'] },
+    { t: '{b} that appears out of nowhere, like {a}', a: ['weather'] },
+    { t: '{b} that tastes suspiciously like {a}', b: ['food'] },
+    { t: '{b} that only makes sense on {a}', a: ['day'] },
+    { t: '{b} that {a} has already licked', a: ['animal'], b: ['food'] },
+    { t: '{b} that has learned to use {a}', a: ['tech'], b: ['animal'] },
+    { t: '{b} you only find after {a}', a: ['weather'], b: ['thing'] },
+    { t: '{b} that will do anything for {a}', a: ['food'], b: ['animal'] },
+    { t: '{b} that feels a week long because of {a}', b: ['day'] },
+  ],
   join: joinEn,
+  joinPrefix: (pre, word) => pre + word,
   mixPos: () => 'n.',
 };
 Object.assign(EXAMPLES, {
@@ -436,9 +498,23 @@ Object.assign(EXAMPLES, {
   'ev:aholic': ['{Who}, a self-confessed {w}, has finally asked for help.', 'Every family has one {w}.'],
   'ev:ery': ['A tiny {w} has just opened {where}.', '{Who} spends every Saturday at the {w}.'],
   'ev:ism': ['{Who} preaches {w} to anyone who will listen.', '{When}, {w} became the town\'s unofficial religion.'],
+  'ev:nado': ['{When}, a {w} hit the town and nobody went to work.', 'The weather forecast warns of a {w} {where}.'],
+  'ev:ville': ['{Who} has been living in {W} for years.', 'Welcome to {W}, population: one very happy {0:x}.'],
+  'ev:ology': ['{Who} has a PhD in {w}.', 'The {w} department {where} has one professor and three cats.'],
+  'ev:tastic': ['The party {where} was absolutely {w}.', '{Who} called the new menu totally {w}.'],
+  'ev:zilla': ['{When}, {who} accidentally created a {w}.', 'The {w} was last seen {where}.'],
+  'ev:let': ['{Who} keeps a {w} in their coat pocket.', 'Look at that {w}! Isn\'t it sweet?'],
+  'ev:pre': ['Nobody was ready for the {w} {where}.', '{Who} still talks about the {w} of 1987.',
+    '{When}, a {w} changed everything.', 'If you ever meet a {w}, stay calm and back away slowly.',
+    '{Who} swears they saw a {w} {where}.', 'The local paper ran a whole page on the {w}.',
+    'There was a {w} {where}, and the photos are incredible.', 'Everyone has a {w} story, but {who} has the best one.'],
   'ev:mix': ['{Who} invented the {w} {where}, and nobody has looked back.',
     'Nothing ruins a quiet afternoon like an unexpected {w}.', '{When}, the {w} became a household word.',
-    'Ask anyone {where} about the {w}: they all have a story.'],
+    'Ask anyone {where} about the {w}: they all have a story.',
+    '{Who} swears the {w} is the best thing to happen {where} in years.',
+    'There is no polite way to explain a {w} to your boss.', '{When}, {who} posted a photo of a {w} and it went viral.',
+    'Every office has at least one {w}, and everyone pretends not to notice.',
+    '{Who} keeps a notebook of every {w} they have ever seen.', 'You haven\'t lived until you\'ve had a proper {w} {where}.'],
 });
 
 // Everything language-specific. Other languages (lang-fr.js) register a pack with the same shape.
@@ -453,7 +529,8 @@ const EN = {
   describe, example: exampleFor, everyday: EVERYDAY,
   fill: (tpl, x, key = 'x') => (typeof x === 'string'
     ? tpl.replaceAll(`{${key}}`, x)
-    : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{${key}}`, x.np)),
+    : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{0:${key}}`, x.np.replace(/^(a|an) /, ''))
+      .replaceAll(`{${key}}`, x.np)),
   plural: w => (w.endsWith('ies') ? w.slice(0, -3) + 'y' : /[^su]s$/.test(w) ? w.slice(0, -1) : ''),
   inflected: (w, v) => (w.endsWith('s') && v.has(w.slice(0, -1)))
     || (w.endsWith('es') && v.has(w.slice(0, -2)))
@@ -531,6 +608,7 @@ class Predictionary {
     for (const w of this.L.avoid || []) this.common.delete(w); // never build a definition on a crude word
     this.models = new Map();
     this.recentSuffixes = [];
+    this.recentMixes = [];
     this.scorer = this.model(3);
     this.index = new Map();
     for (const x of this.L.morphemes) {
@@ -646,9 +724,19 @@ class Predictionary {
   predictEveryday() {
     const L = this.L;
     const E = L.everyday;
+    const weights = { mix: 0.45, suffix: 0.35, prefix: E.prefixes ? 0.2 : 0 };
+    if (this.lastKind) weights[this.lastKind] *= 0.3; // rarely the same pattern twice in a row
+    let r = Math.random() * (weights.mix + weights.suffix + weights.prefix);
+    const kind = Object.keys(weights).find(k => (r -= weights[k]) < 0) || 'mix';
+    const fits = (word, types) => !types || types.includes(word.cat) || (types.includes('event') && word.cat === 'day');
+    // A meaning is a string, or { t, a: [types] } when it only suits some words ("lasts too long" = events).
+    const gloss = (g, word) => {
+      const o = pick((Array.isArray(g) ? g : [g]).filter(m => typeof m === 'string' || fits(word, m.a)));
+      return typeof o === 'string' ? o : o.t;
+    };
     const candidates = [];
     for (let tries = 0; candidates.length < 8 && tries < 300; tries++) {
-      if (Math.random() < 0.55) {
+      if (kind === 'suffix') {
         const word = pick(E.words);
         const suf = pick(E.suffixes.filter(s => !this.recentSuffixes.includes(`ev:${s.form}`)));
         const fem = suf.fem && word.x.g === 'f';
@@ -656,11 +744,21 @@ class Predictionary {
         const w = E.join(word.w, form);
         if (w === word.w || this.isKnown(w) || !this.easyToSay(w)) continue;
         candidates.push({ w, key: `ev:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: word.x,
-          definition: L.fill(suf.gloss, word.x), recipe: `${word.w} + -${form}` });
+          definition: L.fill(gloss(suf.gloss, word), word.x), recipe: `${word.w} + -${form}` });
+      } else if (kind === 'prefix') {
+        const word = pick(E.words);
+        const pre = pick(E.prefixes.filter(p => !this.recentSuffixes.includes(`ev:pre:${p.form}`)));
+        const w = E.joinPrefix(pre.form, word.w);
+        if (this.isKnown(w) || !this.easyToSay(w)) continue;
+        candidates.push({ w, key: 'ev:pre', tag: `ev:pre:${pre.form}`, pos: E.mixPos(word), core: word.x,
+          definition: L.fill(gloss(pre.gloss, word), word.x), recipe: `${pre.form}- + ${word.w}` });
       } else {
-        const mix = pick(E.mixes);
-        const a = pick(E.words);
-        const b = pick(E.words.filter(x => x !== a && (!mix.event || x.event)));
+        const fresh = E.mixes.filter(m => !this.recentMixes.includes(m));
+        const mix = pick(fresh.length ? fresh : E.mixes);
+        const a = pick(E.words.filter(x => fits(x, mix.a)));
+        const bs = E.words.filter(x => x !== a && fits(x, mix.b));
+        if (!a || !bs.length) continue;
+        const b = pick(bs);
         const options = this.blends(a.w, b.w)
           .filter(o => o.w.length >= 4 && o.w.length <= Math.max(a.w.length, b.w.length) + 3 && this.easyToSay(o.w));
         if (a.w.length + b.w.length <= 11 && !this.isKnown(a.w + b.w) && this.easyToSay(a.w + b.w)) {
@@ -668,13 +766,16 @@ class Predictionary {
         }
         if (!options.length) continue;
         const o = pick(options.slice(0, 2));
-        candidates.push({ w: o.w, key: 'ev:mix', pos: E.mixPos(b), core: b.x,
+        candidates.push({ w: o.w, key: 'ev:mix', pos: E.mixPos(b), core: b.x, mix,
           definition: L.fill(L.fill(mix.t || mix, a.x, 'a'), b.x, 'b'), recipe: o.recipe });
       }
     }
+    if (!candidates.length) return this.predict('classic');
     const best = pick(candidates.map(c => ({ ...c, score: this.scorer.score(c.w) }))
       .sort((x, y) => y.score - x.score).slice(0, 3));
-    this.recentSuffixes = [...this.recentSuffixes, best.key].slice(-6);
+    this.lastKind = kind;
+    if (best.mix) this.recentMixes = [...this.recentMixes, best.mix].slice(-10);
+    this.recentSuffixes = [...this.recentSuffixes, best.tag || best.key].slice(-6);
     return {
       word: best.w,
       pos: best.pos,
