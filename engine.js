@@ -751,7 +751,7 @@ const EN = {
   stopwords: STOPWORDS, stem, tokens: s => s.toLowerCase().match(/[a-z]+/g) || [],
   describe, example: exampleFor, everyday: EVERYDAY, children: CHILDREN,
   fill: (tpl, x, key = 'x') => (typeof x === 'string'
-    ? tpl.replaceAll(`{${key}}`, x)
+    ? tpl.replaceAll(`{${key}}`, x).replace(AN, '$1n ')
     : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{0:${key}}`, x.np.replace(/^(a|an) /, ''))
       .replaceAll(`{${key}}`, x.np).replace(AN, '$1n ')),
   plural: w => (w.endsWith('ies') ? w.slice(0, -3) + 'y' : /[^su]s$/.test(w) ? w.slice(0, -1) : ''),
