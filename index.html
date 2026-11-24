@@ -18,14 +18,32 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; color: var(--ink); }
   body { font-family: var(--round); min-height: 100vh; background: #fff6d9; }
-  body::before { content: ""; position: fixed; inset: 0; z-index: -1;
+  body::before, body::after { content: ""; position: fixed; inset: -60px; z-index: -1; pointer-events: none; }
+  body::before {
     background:
       radial-gradient(circle at 8% 12%, rgba(255, 201, 60, .45) 0 14px, transparent 15px),
-      radial-gradient(circle at 92% 30%, rgba(255, 95, 162, .25) 0 22px, transparent 23px),
       radial-gradient(circle at 15% 70%, rgba(63, 169, 255, .25) 0 18px, transparent 19px),
-      radial-gradient(circle at 85% 85%, rgba(31, 184, 156, .25) 0 26px, transparent 27px),
       radial-gradient(circle at 55% 50%, rgba(123, 77, 255, .12) 0 10px, transparent 11px),
-      linear-gradient(180deg, #fff6d9 0%, #ffe9f3 45%, #e3f4ff 100%); }
+      radial-gradient(circle at 70% 8%, rgba(31, 184, 156, .2) 0 9px, transparent 10px),
+      radial-gradient(circle at 30% 38%, rgba(255, 138, 61, .22) 0 12px, transparent 13px),
+      radial-gradient(circle at 78% 58%, rgba(63, 169, 255, .2) 0 16px, transparent 17px),
+      radial-gradient(circle at 5% 92%, rgba(255, 95, 162, .22) 0 20px, transparent 21px),
+      radial-gradient(circle at 62% 78%, rgba(255, 201, 60, .35) 0 7px, transparent 8px),
+      radial-gradient(circle at 45% 6%, rgba(255, 95, 162, .2) 0 11px, transparent 12px),
+      linear-gradient(180deg, #fff6d9 0%, #ffe9f3 45%, #e3f4ff 100%);
+    animation: drift-a 7s ease-in-out infinite alternate; }
+  body::after {
+    background:
+      radial-gradient(circle at 92% 30%, rgba(255, 95, 162, .25) 0 22px, transparent 23px),
+      radial-gradient(circle at 85% 85%, rgba(31, 184, 156, .25) 0 26px, transparent 27px),
+      radial-gradient(circle at 35% 90%, rgba(255, 201, 60, .3) 0 12px, transparent 13px),
+      radial-gradient(circle at 40% 25%, rgba(255, 95, 162, .15) 0 8px, transparent 9px),
+      radial-gradient(circle at 20% 50%, rgba(123, 77, 255, .16) 0 15px, transparent 16px),
+      radial-gradient(circle at 88% 5%, rgba(255, 201, 60, .35) 0 10px, transparent 11px),
+      radial-gradient(circle at 68% 40%, rgba(31, 184, 156, .18) 0 6px, transparent 7px),
+      radial-gradient(circle at 12% 30%, rgba(63, 169, 255, .2) 0 7px, transparent 8px),
+      radial-gradient(circle at 50% 66%, rgba(255, 138, 61, .18) 0 18px, transparent 19px);
+    animation: drift-b 9s ease-in-out infinite alternate; }
   header { padding: calc(env(safe-area-inset-top) + .75rem) 1rem .5rem; display: flex; flex-wrap: wrap; align-items: flex-start;
            justify-content: space-between; gap: .5rem 1rem; }
   h1 { margin: 0; font: 900 clamp(1.45rem, 6.4vw, 2.1rem) var(--round); letter-spacing: -.5px; display: flex; align-items: center; gap: .3rem; }
@@ -77,12 +95,12 @@
   li.entry:nth-child(4) { animation-delay: .15s; } li.entry:nth-child(n+5) { animation-delay: .2s; }
   li.hint { text-align: center; }
   .word { font: 900 1.55rem var(--round); word-break: break-word; color: var(--accent); }
-  #predict-out .word { font-size: 2.4rem; line-height: 1.1;
+  #predict-out .word { font-size: clamp(1.5rem, 7.6vw, 2.4rem); line-height: 1.15;
     background: linear-gradient(90deg, var(--pink), var(--accent) 60%, var(--blue));
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  .predict-row { display: flex; gap: .5rem; }
-  .predict-row button.go { flex: 1; width: auto; }
-  button.step { margin-top: .75rem; padding: 0 .9rem; border: 3px solid var(--line); border-radius: 18px;
+  .predict-row { display: flex; flex-wrap: wrap; gap: 0 .6rem; }
+  .predict-row button.go { flex: 1 0 100%; order: -1; white-space: nowrap; }
+  button.step { flex: 1; margin-top: .9rem; padding: .5rem .9rem; border: 3px solid var(--line); border-radius: 18px;
                 background: #fff; color: var(--accent); font: 800 .95rem var(--round); box-shadow: 0 5px 0 var(--line);
                 transition: transform .08s, box-shadow .08s; }
   button.step:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--line); }
@@ -141,16 +159,20 @@
                    100% { transform: none; } }
   @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-4px) rotate(6deg); } }
   @keyframes glow { 0%, 100% { filter: none; } 50% { filter: brightness(1.12) saturate(1.15); } }
+  @keyframes drift-a { 0% { transform: translate(0, 0); } 50% { transform: translate(28px, -34px); }
+                       100% { transform: translate(-22px, 26px); } }
+  @keyframes drift-b { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, 28px) scale(1.04); }
+                       100% { transform: translate(24px, -22px) scale(.97); } }
   @keyframes fly { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 1; }
                    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(var(--rot)); opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1><span class="mascot" aria-hidden="true">🦉</span><span class="title">Predictionary</span></h1>
-    <p data-i18n="tagline">a dictionary of words that don't exist yet</p>
+    <p data-i18n="tagline">A dictionary of words that don't exist ... yet!</p>
   </div>
   <div class="lang" role="group" aria-label="Language">
     <button data-lang="en" class="on">EN</button>
@@ -247,7 +269,7 @@ const LETTERS = { en: /[^a-z]/g, fr: /[^a-zàâäçéèêëîïôöùûüÿœæ]
 
 const STRINGS = {
   en: {
-    tagline: "a dictionary of words that don't exist yet", loading: 'Learning English…',
+    tagline: "A dictionary of words that don't exist ... yet!", loading: 'Learning English…',
     prev: '‹ Previous', next: 'Next ›', predict: 'Predict a word', howMany: 'How many', shortest: 'Shortest',
     longest: 'Longest', startsWith: 'Starts with', creativity: 'Creativity', tame: 'tame', balanced: 'balanced',
     wild: 'wild', invent: 'Invent', coinHint: 'Describe a concept, get candidate words for it. Try "fear of meetings" or "love of coffee".',
@@ -265,7 +287,7 @@ const STRINGS = {
     styleEveryday: 'Everyday', styleClassic: 'Classic', styleScientific: 'Scientific', styleChildren: 'Children',
   },
   fr: {
-    tagline: "un dictionnaire des mots qui n'existent pas encore", loading: "J'apprends le français…",
+    tagline: "Un dictionnaire des mots qui n'existent pas ... encore !", loading: "J'apprends le français…",
     prev: '‹ Précédent', next: 'Suivant ›', predict: 'Prédire un mot', howMany: 'Combien', shortest: 'Le plus court',
     longest: 'Le plus long', startsWith: 'Commence par', creativity: 'Créativité', tame: 'sage', balanced: 'équilibrée',
     wild: 'débridée', invent: 'Inventer',
@@ -284,7 +306,7 @@ const STRINGS = {
     styleEveryday: 'Quotidien', styleClassic: 'Classique', styleScientific: 'Savant', styleChildren: 'Enfants',
   },
   es: {
-    tagline: 'un diccionario de palabras que aún no existen', loading: 'Aprendiendo español…',
+    tagline: 'Un diccionario de palabras que no existen ... ¡todavía!', loading: 'Aprendiendo español…',
     prev: '‹ Anterior', next: 'Siguiente ›', predict: 'Predecir una palabra', howMany: 'Cuántas',
     shortest: 'Más corta', longest: 'Más larga', startsWith: 'Empieza por', creativity: 'Creatividad',
     tame: 'prudente', balanced: 'equilibrada', wild: 'desatada', invent: 'Inventar',
@@ -479,6 +501,7 @@ function confetti(from) {
     c.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
     c.style.setProperty('--rot', `${Math.round(Math.random() * 360 - 180)}deg`);
     c.addEventListener('animationend', () => c.remove());
+    setTimeout(() => c.remove(), 1500); // hidden tabs never fire animationend
     document.body.append(c);
   }
 }
