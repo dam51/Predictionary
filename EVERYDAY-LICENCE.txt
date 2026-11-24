@@ -1,0 +1,44 @@
+everyday-en.tsv, everyday-fr.tsv and everyday-es.tsv are word lists built by ../build_everyday.py from:
+
+- WordNet 3.0 (Princeton University): word types and English plurals. Licence below.
+- WOLF, Wordnet Libre du Francais (via Open Multilingual Wordnet 1.4): French words. CeCILL-C licence,
+  https://cecill.info/licences/Licence_CeCILL-C_V1-en.html - everyday-fr.tsv is a modified extract and is
+  distributed under CeCILL-C.
+- Multilingual Central Repository 3.0 (via Open Multilingual Wordnet 1.4): Spanish words. CC BY 3.0,
+  https://creativecommons.org/licenses/by/3.0/
+- FrequencyWords by Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0: English and Spanish word frequencies.
+- Lexique 3.83 (see LEXIQUE-LICENCE.txt): French genders, plurals and frequencies.
+
+----- WordNet 3.0 licence -----
+
+WordNet Release 3.0
+
+This software and database is being provided to you, the LICENSEE, by  
+Princeton University under the following license.  By obtaining, using  
+and/or copying this software and database, you agree that you have  
+read, understood, and will comply with these terms and conditions.:  
+  
+Permission to use, copy, modify and distribute this software and  
+database and its documentation for any purpose and without fee or  
+royalty is hereby granted, provided that you agree to comply with  
+the following copyright notice and statements, including the disclaimer,  
+and that the same appear on ALL copies of the software, database and  
+documentation, including modifications that you make for internal  
+use or for distribution.  
+  
+WordNet 3.0 Copyright 2006 by Princeton University.  All rights reserved.  
+  
+THIS SOFTWARE AND DATABASE IS PROVIDED "AS IS" AND PRINCETON  
+UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR  
+IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PRINCETON  
+UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES OF MERCHANT-  
+ABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE  
+OF THE LICENSED SOFTWARE, DATABASE OR DOCUMENTATION WILL NOT  
+INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR  
+OTHER RIGHTS.  
+  
+The name of Princeton University or Princeton may not be used in  
+advertising or publicity pertaining to distribution of the software  
+and/or database.  Title to copyright in this software, database and  
+any associated documentation shall at all times remain with  
+Princeton University and LICENSEE agrees to preserve same.  

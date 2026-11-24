@@ -162,7 +162,18 @@ const WHEN = ['Last winter', 'Every Tuesday', 'Since the power cut', 'On the day
   'By the third week of the strike', 'In the spring of 1987', 'Shortly after the lottery win',
   'Halfway through the meeting', 'On the first day of the sales', 'Just before midnight', 'After the third coffee',
   'On a rainy bank holiday', 'The week the boiler broke'];
-const ADULTS = { who: WHO, where: WHERE, when: WHEN };
+const ADULTS = { who: WHO, where: WHERE, when: WHEN,
+  verbs: ['found a {w}', 'lost a {w}', 'invented the {w}', 'swears they saw a {w}', 'wrote a song about the {w}',
+    'posted a photo of a {w}', 'blames everything on the {w}', 'won a {w} in a raffle', 'hid a {w} under the stairs',
+    'tripped over a {w}', 'sold a {w} on the internet', 'named the cat after the {w}', 'built a {w} out of cardboard',
+    'ordered a {w} by mistake', 'can\'t stop talking about the {w}', 'spent all morning looking for the {w}',
+    'brought a {w} to the meeting', 'painted a {w} on the garage door', 'was chased by a {w}', 'fell in love with a {w}',
+    'took a {w} on holiday', 'gave a speech about the {w}', 'kept a {w} in the freezer', 'traded a bicycle for a {w}',
+    'dreamt about a {w}', 'knitted a {w}', 'rented a {w} for the weekend', 'tried to explain the {w} to a tourist',
+    'started a podcast about the {w}', 'baked a cake shaped like a {w}', 'is writing a book about the {w}',
+    'got a {w} for their birthday', 'set up a fan club for the {w}', 'smuggled a {w} into the cinema',
+    'accidentally sat on a {w}', 'taught the parrot to say "{w}"', 'got stuck in a lift with a {w}',
+    'returned a {w} to the shop', 'photographed a very rare {w}', 'left a {w} on the bus'] };
 const KIDS = {
   who: ['My little sister', 'Our teacher', 'Grandpa', 'The new kid in class', 'A very small pirate', 'My best friend',
     'The dinner lady', 'A sleepy giant', 'The tooth fairy', 'My big brother', 'The bus driver', 'A shy dragon',
@@ -173,7 +184,18 @@ const KIDS = {
   when: ['Yesterday after school', 'On the last day of term', 'At bedtime', 'Every Saturday morning',
     'During the summer holidays', 'On a snowy day', 'Once upon a time', 'On my birthday', 'Right after lunch',
     'At playtime', 'During the school trip', 'On a rainy Sunday'],
+  verbs: ['found a {w}', 'drew a {w}', 'made friends with a {w}', 'hid a {w} under the bed', 'built a {w} out of boxes',
+    'lost a {w}', 'shared a {w} with the whole class', 'gave a {w} a big hug', 'took a {w} to school',
+    'had a dream about a {w}', 'named the goldfish after the {w}', 'got a {w} for their birthday', 'tripped over a {w}',
+    'painted a {w} in art class', 'wrote a story about a {w}', 'sang a song to the {w}', 'read a book about a {w}',
+    'taught the {w} a new trick', 'was chased by a giggling {w}', 'made a {w} out of play dough', 'wished for a {w}',
+    'spotted a {w} through the window', 'took a photo of a {w}', 'played hide-and-seek with a {w}',
+    'tucked a {w} into bed', 'won a {w} at the fair', 'made a birthday card for the {w}', 'built a den for the {w}',
+    'whispered a secret to the {w}', 'counted the spots on a {w}'],
 };
+// Sentence keys whose words name a thing, a creature or a happening, so "found a {w}" makes sense.
+const GEN_KEYS = new Set(['ev:mix', 'ev:pre', 'ev:let', 'ev:zilla', 'ch:mix', 'ch:pre', 'ch:saurus', 'ch:icorn',
+  'ch:bot', 'ch:zilla', 'ch:let', 'ch:kins', 'ch:pop']);
 
 const EXAMPLES = {
   phobia: [
@@ -346,6 +368,19 @@ const FALLBACKS = ['anything that reminds you of "{b}" for no clear reason',
   'what "{b}" turns into after midnight'];
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+/** A random item not in memory; if every item is in memory, the one seen longest ago. */
+const freshest = (items, id, mem) => {
+  const unseen = items.filter(x => !mem.includes(id(x)));
+  if (unseen.length) return pick(unseen);
+  return items.reduce((best, x) => (mem.indexOf(id(x)) < mem.indexOf(id(best)) ? x : best));
+};
+/** Move item to the newest end of a memory list, keeping at most cap entries. */
+const remember = (mem, item, cap) => {
+  const i = mem.indexOf(item);
+  if (i >= 0) mem.splice(i, 1);
+  mem.push(item);
+  if (mem.length > cap) mem.splice(0, mem.length - cap);
+};
 const longest = arr => arr.reduce((best, x) => (!best || x.form.length > best.form.length ? x : best), null);
 const shortGloss = p => p.gloss.replace(/\{[^}]*\}/g, '…');
 const recipeOf = parts => parts.map(p => `${p.form} (${shortGloss(p)})`).join(' + ');
@@ -388,14 +423,20 @@ function describe(pre, roots, suf) {
 const recentTemplates = [];
 const AN = /\b([Aa]) (?=[aeio]|u(?!ni|se))/g; // "a umbrella" -> "an umbrella", but "a unicorn"
 
-/** Fill a sentence for this word, avoiding templates used in the last dozen sentences. */
-function exampleFor(key, w, x) {
-  const all = EXAMPLES[key];
-  const fresh = all.filter(t => !recentTemplates.includes(t));
-  const t = pick(fresh.length ? fresh : all);
-  recentTemplates.push(t);
-  if (recentTemplates.length > 12) recentTemplates.shift();
+/** Fill a sentence for this word, avoiding templates in recent (the visit memory, or the last dozen sentences).
+ *  For concrete nouns, half the time the sentence is built from parts: a person, an action, a place or time. */
+function exampleFor(key, w, x, pos, opts = {}) {
+  const recent = opts.recent || recentTemplates;
   const S = key.startsWith('ch:') ? KIDS : ADULTS;
+  let t;
+  if (opts.concrete && GEN_KEYS.has(key) && Math.random() < 0.5) {
+    const vp = freshest(S.verbs, v => v, recent);
+    remember(recent, vp, opts.recent ? 150 : 12);
+    t = pick([`{Who} ${vp}.`, `{When}, {who} ${vp}.`, `{Who} ${vp} {where}.`]);
+  } else {
+    t = freshest(EXAMPLES[key], s => s, recent);
+    remember(recent, t, opts.recent ? 150 : 12);
+  }
   const who = pick(S.who);
   const xs = typeof x === 'string' ? { np: x, pl: x } : x;
   return t.replaceAll('{W}', upperFirst(w)).replaceAll('{w}', w).replaceAll('{s:x}', xs.pl)
@@ -506,7 +547,7 @@ const EVERYDAY = {
     { form: 'ultra', gloss: ['the most extreme {0:x} imaginable', '{x}, but turned up to eleven'] },
     { form: 'pre', gloss: ['the moment just before {x} shows up', 'a small warm-up {0:x} before the real one'] },
     { form: 'post', gloss: ['whatever is left after {x}', 'the strange calm right after {x}'] },
-    { form: 'micro', gloss: ['a {0:x} you need a magnifying glass to see', 'the smallest possible amount of {0:x}'] },
+    { form: 'micro', gloss: ['a {0:x} you need a magnifying glass to see', { t: 'the smallest possible amount of {0:x}', a: ['food', 'weather'] }] },
   ],
   mixes: [
     '{b} that somehow turns into {a}', 'what you get when {a} meets {b}', '{b} with the energy of {a}',
@@ -544,6 +585,10 @@ const EVERYDAY = {
     { t: '{b} with the attention span of {a}', a: ['animal'], b: ['event', 'tech'] },
     { t: '{b} that brings {a} with it wherever it goes', a: ['weather'], b: ['animal', 'thing', 'event'] },
   ],
+  twists: [', but only on Tuesdays', ', and nobody knows why', ', usually by accident', ', much to everyone\'s surprise',
+    ' (mostly harmless)', ', according to my grandmother', ', but only after midnight', ', as seen on television',
+    ', strictly for emergencies', ', and it is spreading', ', especially in winter', ', but nobody admits it',
+    ', first spotted in 1987', ', now available in blue', ', mostly in Belgium', ', for reasons nobody remembers'],
   join: joinEn,
   joinPrefix: (pre, word) => pre + word,
   mixPos: () => 'n.',
@@ -700,6 +745,9 @@ const CHILDREN = {
     { t: '{b} that leaves {s:a} wherever it goes', a: ['food', 'weather', 'thing'], b: LIVING },
     { t: '{b} with the bounce of {a}', a: ['animal'], b: ['thing', 'food'] },
   ],
+  twists: [', but only on Saturdays', ', and nobody knows why', ', just for fun', ', if you ask nicely', ', and it\'s a secret',
+    ', but only in the summer holidays', ', according to Granny', ', every single Tuesday', ', but only at bedtime',
+    ', which is the best thing ever', ', and that\'s a fact', ', with extra sprinkles'],
   join: joinEn,
   joinPrefix: (pre, word) => pre + word,
   mixPos: () => 'n.',
@@ -750,6 +798,7 @@ const EN = {
   soundsLike: 'sounds like', blend: 'blend of {a} and {b}',
   stopwords: STOPWORDS, stem, tokens: s => s.toLowerCase().match(/[a-z]+/g) || [],
   describe, example: exampleFor, everyday: EVERYDAY, children: CHILDREN,
+  wordRow: ([w, np, pl, cat, kid]) => (cat ? { w, x: { np, pl }, cat, kid: kid === '1' } : null),
   fill: (tpl, x, key = 'x') => (typeof x === 'string'
     ? tpl.replaceAll(`{${key}}`, x).replace(AN, '$1n ')
     : tpl.replaceAll(`{s:${key}}`, x.pl).replaceAll(`{0:${key}}`, x.np.replace(/^(a|an) /, ''))
@@ -831,7 +880,9 @@ class Predictionary {
     for (const w of this.L.avoid || []) this.common.delete(w); // never build a definition on a crude word
     this.models = new Map();
     this.recentSuffixes = [];
-    this.recentMixes = [];
+    // What was shown recently (strings only, so the app can save it between visits).
+    this.memory = { tags: [], meanings: [], words: [], sentences: [] };
+    this.sets = { everyday: this.L.everyday, children: this.L.children };
     this.scorer = this.model(3);
     this.index = new Map();
     for (const x of this.L.morphemes) {
@@ -850,6 +901,19 @@ class Predictionary {
   /** Remember words found to exist elsewhere (e.g. online) so they are never offered again. */
   addKnown(words) {
     for (const w of words) this.vocab.add(w);
+  }
+
+  /** Add typed words from a big list (one array of columns each); Children only gets the ones marked for kids. */
+  addWords(rows) {
+    if (!this.L.wordRow) return;
+    const parsed = rows.map(r => this.L.wordRow(r)).filter(Boolean);
+    for (const style of ['everyday', 'children']) {
+      const E = this.sets[style];
+      if (!E) continue;
+      const have = new Set(E.words.map(x => x.w));
+      const extra = parsed.filter(x => !have.has(x.w) && (style === 'everyday' || x.kid));
+      this.sets[style] = { ...E, words: [...E.words, ...extra] };
+    }
   }
 
   isKnown(w) {
@@ -894,8 +958,8 @@ class Predictionary {
   /** Build one new word, with its meaning and an example sentence.
    *  style: 'everyday' (ordinary words), 'classic' (one root, easy to say) or 'scientific' (stacked roots). */
   predict(style = 'everyday') {
-    if (style === 'everyday' && this.L.everyday) return this.predictEveryday(this.L.everyday, 'ev');
-    if (style === 'children' && this.L.children) return this.predictEveryday(this.L.children, 'ch');
+    if (style === 'everyday' && this.sets.everyday) return this.predictEveryday(this.sets.everyday, 'ev');
+    if (style === 'children' && this.sets.children) return this.predictEveryday(this.sets.children, 'ch');
     const classic = style === 'classic';
     const L = this.L;
     const candidates = [];
@@ -948,41 +1012,51 @@ class Predictionary {
    *  E is the word set (L.everyday or L.children); tag prefixes its sentence keys ("ev:ish", "ch:saurus"). */
   predictEveryday(E, tag) {
     const L = this.L;
+    const M = this.memory;
     const weights = { mix: 0.45, suffix: 0.35, prefix: E.prefixes ? 0.2 : 0 };
     if (this.lastKind) weights[this.lastKind] *= 0.3; // rarely the same pattern twice in a row
     let r = Math.random() * (weights.mix + weights.suffix + weights.prefix);
     const kind = Object.keys(weights).find(k => (r -= weights[k]) < 0) || 'mix';
     const fits = (word, types) => !types || types.includes(word.cat) || (types.includes('event') && word.cat === 'day');
+    const text = m => (typeof m === 'string' ? m : m.t);
     // A meaning is a string, or { t, a: [types] } when it only suits some words ("lasts too long" = events).
-    const gloss = (g, word) => {
-      const o = pick((Array.isArray(g) ? g : [g]).filter(m => typeof m === 'string' || fits(word, m.a)));
-      return typeof o === 'string' ? o : o.t;
+    const gloss = (g, word) => text(freshest((Array.isArray(g) ? g : [g]).filter(m => typeof m === 'string' || fits(word, m.a)),
+      text, M.meanings));
+    const word = (pool = E.words) => freshest(pool, x => x.w, M.words);
+    // An ending or prefix whose meanings for this word haven't all been shown recently, if there is one.
+    const affix = (list, tagOf, base) => {
+      const ok = list.filter(s => !M.tags.includes(tagOf(s)));
+      const fresh = ok.filter(s => s.gloss.some(m => (typeof m === 'string' || fits(base, m.a)) && !M.meanings.includes(text(m))));
+      return pick(fresh.length ? fresh : ok);
     };
     const candidates = [];
     for (let tries = 0; candidates.length < 8 && tries < 300; tries++) {
       if (kind === 'suffix') {
-        const word = pick(E.words);
-        const suf = pick(E.suffixes.filter(s => !this.recentSuffixes.includes(`${tag}:${s.form}`)));
-        const fem = suf.fem && word.x.g === 'f';
+        const base = word();
+        const suf = affix(E.suffixes, s => `${tag}:${s.form}`, base);
+        const fem = suf.fem && base.x.g === 'f';
         const form = fem ? suf.fem : suf.form;
-        const w = E.join(word.w, form);
-        if (w === word.w || this.isKnown(w) || !this.easyToSay(w)) continue;
-        candidates.push({ w, key: `${tag}:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: word.x,
-          definition: L.fill(gloss(suf.gloss, word), word.x), recipe: `${word.w} + -${form}` });
+        const w = E.join(base.w, form);
+        if (w === base.w || this.isKnown(w) || !this.easyToSay(w)) continue;
+        const g = gloss(suf.gloss, base);
+        candidates.push({ w, key: `${tag}:${suf.form}`, pos: fem ? suf.posFem : suf.pos, core: base.x, words: [base],
+          meaning: g, definition: L.fill(g, base.x), recipe: `${base.w} + -${form}` });
       } else if (kind === 'prefix') {
-        const word = pick(E.words);
-        const pre = pick(E.prefixes.filter(p => !this.recentSuffixes.includes(`${tag}:pre:${p.form}`)));
-        const w = E.joinPrefix(pre.form, word.w);
+        const base = word();
+        const pre = affix(E.prefixes, p => `${tag}:pre:${p.form}`, base);
+        const w = E.joinPrefix(pre.form, base.w);
         if (this.isKnown(w) || !this.easyToSay(w)) continue;
-        candidates.push({ w, key: `${tag}:pre`, tag: `${tag}:pre:${pre.form}`, pos: E.mixPos(word), core: word.x,
-          definition: L.fill(gloss(pre.gloss, word), word.x), recipe: `${pre.form}- + ${word.w}` });
+        const g = gloss(pre.gloss, base);
+        candidates.push({ w, key: `${tag}:pre`, tag: `${tag}:pre:${pre.form}`, pos: E.mixPos(base), core: base.x, words: [base],
+          meaning: g, definition: L.fill(g, base.x), recipe: `${pre.form}- + ${base.w}` });
       } else {
-        const fresh = E.mixes.filter(m => !this.recentMixes.includes(m));
-        const mix = pick(fresh.length ? fresh : E.mixes);
-        const a = pick(E.words.filter(x => fits(x, mix.a)));
+        const mix = freshest(E.mixes, text, M.meanings);
+        const as = E.words.filter(x => fits(x, mix.a));
+        if (!as.length) continue;
+        const a = word(as);
         const bs = E.words.filter(x => x !== a && fits(x, mix.b));
-        if (!a || !bs.length) continue;
-        const b = pick(bs);
+        if (!bs.length) continue;
+        const b = word(bs);
         const options = this.blends(a.w, b.w)
           .filter(o => o.w.length >= 4 && o.w.length <= Math.max(a.w.length, b.w.length) + 3 && this.easyToSay(o.w));
         if (a.w.length + b.w.length <= 11 && !this.isKnown(a.w + b.w) && this.easyToSay(a.w + b.w)) {
@@ -990,22 +1064,31 @@ class Predictionary {
         }
         if (!options.length) continue;
         const o = pick(options.slice(0, 2));
-        candidates.push({ w: o.w, key: `${tag}:mix`, pos: E.mixPos(b), core: b.x, mix,
-          definition: L.fill(L.fill(mix.t || mix, a.x, 'a'), b.x, 'b'), recipe: o.recipe });
+        candidates.push({ w: o.w, key: `${tag}:mix`, pos: E.mixPos(b), core: b.x, words: [a, b], meaning: text(mix),
+          definition: L.fill(L.fill(text(mix), a.x, 'a'), b.x, 'b'), recipe: o.recipe });
       }
     }
     if (!candidates.length) return this.predict('classic');
     const best = pick(candidates.map(c => ({ ...c, score: this.scorer.score(c.w) }))
       .sort((x, y) => y.score - x.score).slice(0, 3));
     this.lastKind = kind;
-    if (best.mix) this.recentMixes = [...this.recentMixes, best.mix].slice(-10);
-    this.recentSuffixes = [...this.recentSuffixes, best.tag || best.key].slice(-6);
+    let definition = best.definition;
+    if (E.twists && Math.random() < 0.3 && definition.length <= 55 && !definition.includes(',')) {
+      const twist = freshest(E.twists, t => t, M.meanings);
+      definition += twist;
+      remember(M.meanings, twist, 250);
+    }
+    remember(M.meanings, best.meaning, 250);
+    for (const x of best.words) remember(M.words, x.w, 90);
+    remember(M.tags, best.tag || best.key, 6);
+    const head = best.words.at(-1);
     return {
       word: best.w,
       pos: best.pos,
       plausibility: this.plausibility(best.w),
-      definition: best.definition,
-      example: L.example(best.key, best.w, best.core, best.pos),
+      definition,
+      example: L.example(best.key, best.w, best.core, best.pos,
+        { recent: M.sentences, concrete: !['event', 'day'].includes(head.cat) }),
       recipe: best.recipe,
     };
   }
@@ -1213,4 +1296,5 @@ class Predictionary {
 }
 
 Predictionary.LANGS = LANGS;
+Predictionary.tools = { freshest, remember };
 if (typeof module !== 'undefined') module.exports = { Predictionary }; // for Node tests

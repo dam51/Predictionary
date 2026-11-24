@@ -473,6 +473,7 @@ $('predict-go').onclick = async () => {
   updateSteps(true);
   let result = { fresh: [], offline: false };
   for (let i = 0; i < 6 && !result.fresh.length; i++) result = await onlyNew([engine.predict(style)], 1);
+  localStorage.setItem(memoryKey(lang), JSON.stringify(engine.memory));
   busy(out, false);
   if (!result.fresh.length) {
     render(out, [], t('allExisted'));
@@ -576,13 +577,21 @@ const lines = file => fetch(file)
   .then(text => text.split('\n').filter(Boolean));
 
 const engines = {}; // lang -> Promise<Predictionary>, built the first time that language is used
+const memoryKey = l => `predictionary.memory.${l}`; // what was recently shown, so a new visit doesn't repeat it
 function loadEngine(l) {
-  engines[l] = engines[l] || Promise.all(LISTS[l].map(lines))
+  engines[l] = engines[l] || Promise.all([...LISTS[l].map(lines), lines(`everyday-${l}.tsv`)])
     .then(lists => new Promise(resolve => setTimeout(() => resolve(lists), 30))) // let "Learning…" paint first
-    .then(([words, common, train]) => {
+    .then(lists => {
+      const everyday = lists.pop();
+      const [words, common, train] = lists;
       const e = new Predictionary(words, common, l, train || words);
+      e.addWords(everyday.map(row => row.split('\t')));
       e.addKnown(JSON.parse(localStorage.getItem(knownKey(l)) || '[]'));
       if (train) e.addKnown(train); // dictionary headwords count as existing words too
+      try {
+        const mem = JSON.parse(localStorage.getItem(memoryKey(l)) || '{}');
+        for (const k of Object.keys(e.memory)) if (Array.isArray(mem[k])) e.memory[k] = mem[k].filter(s => typeof s === 'string');
+      } catch { /* a damaged memory just starts fresh */ }
       return e;
     });
   return engines[l];

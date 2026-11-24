@@ -2,7 +2,9 @@
 'use strict';
 
 (function registerFrench(Predictionary) {
-  const ELIDE = /^[aeiouyàâäéèêëîïôöùûüœæh]/i;
+  // Words starting with a vowel or a silent h take l'/d'; these h words and y words don't ("le hamster", "le yaourt").
+  const ASPIRATED = /^(hamster|hibou|haricot|homard|hérisson|héron|hache|haie|hall|hamac|hamburger|handicap|hangar|hareng|harpe|hasard|hockey|hotte|houx|hublot|huit|héros|hutte|hoquet|harpon|haut|hêtre|hibou)/i;
+  const ELIDE = { test: s => /^[aeiouàâäéèêëîïôöùûüœæh]/i.test(s) && !ASPIRATED.test(s) };
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   const lowerFirst = s => s[0].toLowerCase() + s.slice(1);
   const upperFirst = s => s[0].toUpperCase() + s.slice(1);
@@ -43,7 +45,7 @@
     return tpl.replaceAll(`{de:${key}}`, de(s)).replaceAll(`{a:${key}}`, a(s))
       .replaceAll(`{un:${key}}`, indef).replaceAll(`{dun:${key}}`, x.pl ? `de ${bare}` : de(indef))
       .replaceAll(`{qun:${key}}`, x.pl ? `que ${indef}` : `qu'${indef}`).replaceAll(`{e:${key}}`, e)
-      .replaceAll(`{0s:${key}}`, typeof x === 'string' ? x : nounPlural(x.noun))
+      .replaceAll(`{0s:${key}}`, typeof x === 'string' ? x : x.pls || nounPlural(x.noun))
       .replaceAll(`{d0:${key}}`, de(bare)).replaceAll(`{0:${key}}`, bare).replaceAll(`{${key}}`, s)
       .replace(/(^|\s)([Qq]u|[Dd])e (?=[aeiouàâéèêîôûœ])/gi, "$1$2'");
   }
@@ -230,7 +232,19 @@
     'Bien avant Internet', 'Pendant la canicule', 'Le lendemain du mariage', 'À la troisième semaine de grève',
     'Au printemps 1987', 'Peu après avoir gagné au loto', 'En pleine réunion', 'Le premier jour des soldes',
     'Juste avant minuit', 'Après le troisième café', 'Un jour férié pluvieux', 'La semaine où la chaudière a lâché'];
-  const ADULTS = { who: WHO, where: WHERE, when: WHEN };
+  const ADULTS = { who: WHO, where: WHERE, when: WHEN,
+    verbs: ['a trouvé {un:w}', 'a perdu {un:w}', 'a inventé {le:w}', 'jure avoir vu {un:w}', 'a écrit une chanson sur {le:w}',
+      'a posté une photo {de:w}', 'met tout sur le dos {de:w}', 'a gagné {un:w} à la tombola', "a caché {un:w} sous l'escalier",
+      'a trébuché sur {un:w}', 'a vendu {un:w} sur Internet', 'a appelé son chat comme {le:w}', 'a fabriqué {un:w} en carton',
+      'a commandé {un:w} par erreur', 'ne parle plus que {de:w}', 'a passé la matinée à chercher {le:w}',
+      'a apporté {un:w} à la réunion', 'a peint {un:w} sur la porte du garage', "s'est fait courser par {un:w}",
+      'a eu le coup de foudre pour {un:w}', 'a emmené {un:w} en vacances', 'a fait un discours sur {le:w}',
+      'garde {un:w} au congélateur', 'a échangé un vélo contre {un:w}', 'a rêvé de {un:w}', 'a tricoté {un:w}',
+      'a loué {un:w} pour le week-end', "a essayé d'expliquer {le:w} à un touriste", 'a lancé un podcast sur {le:w}',
+      'a fait un gâteau en forme {d:w}', 'écrit un livre sur {le:w}', 'a reçu {un:w} pour son anniversaire',
+      'a fondé un fan-club pour {le:w}', 'a fait entrer {un:w} en douce au cinéma', "a écrasé {un:w} en s'asseyant",
+      'a appris au perroquet à dire « {w} »', 'a partagé un ascenseur en panne avec {un:w}',
+      'a rapporté {un:w} au magasin', 'a photographié {un:w} très rare', 'a oublié {un:w} dans le bus'] };
   const KIDS = {
     who: ['Ma petite sœur', 'Notre maîtresse', 'Papi', 'Le nouveau de la classe', 'Un tout petit pirate',
       'Mon meilleur copain', 'La dame de la cantine', 'Un géant tout endormi', 'La petite souris', 'Mon grand frère',
@@ -242,6 +256,16 @@
     when: ["Hier après l'école", "Le dernier jour d'école", "À l'heure du coucher", 'Tous les samedis matin',
       'Pendant les grandes vacances', 'Un jour de neige', 'Un beau matin', 'Le jour de mon anniversaire',
       'Juste après la cantine', 'À la récré', 'Pendant la sortie scolaire', 'Un dimanche pluvieux'],
+    verbs: ['a trouvé {un:w}', 'a dessiné {un:w}', 'a joué avec {un:w} toute la récré', 'a caché {un:w} sous le lit',
+      'a fabriqué {un:w} avec des cartons', 'a perdu {un:w}', 'a partagé {un:w} avec toute la classe',
+      'a fait un gros câlin {a:w}', "a emmené {un:w} à l'école", 'a rêvé de {un:w}',
+      'a appelé son poisson rouge comme {le:w}', 'a reçu {un:w} pour son anniversaire', 'a trébuché sur {un:w}',
+      'a peint {un:w} en arts plastiques', 'a écrit une histoire sur {un:w}', 'a chanté une chanson {a:w}',
+      'a lu un livre sur {un:w}', 'a appris un nouveau tour {a:w}', "s'est fait courser par {un:w} qui rigolait",
+      'a fait {un:w} en pâte à modeler', "a fait le vœu d'avoir {un:w}", 'a vu {un:w} par la fenêtre',
+      'a pris {un:w} en photo', 'a joué à cache-cache avec {un:w}', 'a bordé {un:w} dans son lit',
+      'a gagné {un:w} à la fête foraine', "a fait une carte d'anniversaire pour {le:w}",
+      'a construit une cabane pour {le:w}', 'a raconté un secret {a:w}', 'a compté les taches de {un:w}'],
   };
 
   const EXAMPLES = {
@@ -340,17 +364,26 @@
       "La pièce maîtresse de l'exposition était {un:w} géant, une méditation sur {x}."],
   };
 
-  const recent = [];
+  const recentLocal = [];
+  const { freshest, remember } = Predictionary.tools;
+  // Sentence keys whose words name a thing, a creature or a happening, so "a trouvé un {w}" makes sense.
+  const GEN_KEYS = new Set(['ev:mix', 'ev:pre', 'ev:ette', 'ev:zilla', 'ch:mix', 'ch:pre', 'ch:osaure', 'ch:icorne',
+    'ch:bot', 'ch:zilla', 'ch:ette', 'ch:ounet']);
 
-  function example(key, w, core, pos) {
-    const all = EXAMPLES[key];
-    const fresh = all.filter(t => !recent.includes(t));
-    const t = pick(fresh.length ? fresh : all);
-    recent.push(t);
-    if (recent.length > 12) recent.shift();
+  function example(key, w, core, pos, opts = {}) {
+    const recent = opts.recent || recentLocal;
+    const S = key.startsWith('ch:') ? KIDS : ADULTS;
+    let t;
+    if (opts.concrete && GEN_KEYS.has(key) && Math.random() < 0.5) {
+      const vp = freshest(S.verbs, v => v, recent);
+      remember(recent, vp, opts.recent ? 150 : 12);
+      t = pick([`{Who} ${vp}.`, `{When}, {who} ${vp}.`, `{Who} ${vp} {where}.`]);
+    } else {
+      t = freshest(EXAMPLES[key], s => s, recent);
+      remember(recent, t, opts.recent ? 150 : 12);
+    }
     const fem = (pos || POS[key]) === 'n.f.';
     const le = ELIDE.test(w) ? `l'${w}` : `${fem ? 'la' : 'le'} ${w}`;
-    const S = key.startsWith('ch:') ? KIDS : ADULTS;
     const who = pick(S.who);
     return fill(t, core)
       .replaceAll('{Le:w}', upperFirst(le)).replaceAll('{le:w}', le).replaceAll('{un:w}', `${fem ? 'une' : 'un'} ${w}`)
@@ -442,7 +475,7 @@
       { form: 'ultra', gloss: ['la version la plus extrême {dun:x}', '{un:x} puissance dix'] },
       { form: 'pré', gloss: ['le moment juste avant {un:x}', "{un:x} pour s'échauffer avant le grand jour"] },
       { form: 'post', gloss: ['tout ce qui reste après {un:x}', "le calme étrange juste après {un:x}"] },
-      { form: 'micro', gloss: ["{un:x} qu'on ne voit qu'à la loupe", 'la plus petite quantité possible {de:x}'] },
+      { form: 'micro', gloss: ["{un:x} qu'on ne voit qu'à la loupe", { t: 'la plus petite quantité possible {de:x}', a: ['food', 'weather'] }] },
     ],
     mixes: [
       '{un:b} qui finit toujours en {0:a}', 'ce qui se passe quand {a} croise {b}', "{un:b} avec toute l'énergie {dun:a}",
@@ -480,6 +513,10 @@
       { t: '{un:b} avec la capacité de concentration {dun:a}', a: ['animal'], b: ['event', 'tech'] },
       { t: '{un:b} toujours accompagné{e:b} {dun:a}', a: ['weather'], b: ['animal', 'thing', 'event'] },
     ],
+    twists: [', mais seulement le mardi', ', et personne ne sait pourquoi', ', le plus souvent par accident',
+      ', à la surprise générale', ' (sans danger, en général)', ', selon ma grand-mère', ', mais seulement après minuit',
+      ', comme à la télé', ', en cas d\'urgence seulement', ', et ça se propage', ', surtout en hiver', ", mais personne ne l'avoue",
+      ', une invention de 1987', ', désormais disponible en bleu', ', surtout en Belgique', ', pour des raisons oubliées'],
     join: (word, suffix) => (/[aeiouy]$/.test(word) && /^[aeiouy]/.test(suffix) ? word.slice(0, -1) : word) + suffix,
     joinPrefix: (pre, word) => (pre === 're' && /^[aeiouyéè]/.test(word) ? `ré${word}` : pre + word),
     mixPos: b => (b.x.g === 'f' ? 'n.f.' : 'n.m.'),
@@ -624,6 +661,9 @@
       { t: '{un:b} qui sème des {0s:a} partout', a: ['food', 'weather', 'thing'], b: LIVING },
       { t: '{un:b} qui rebondit comme {un:a}', a: ['animal'], b: ['thing', 'food'] },
     ],
+    twists: [', mais seulement le samedi', ', et personne ne sait pourquoi', ', juste pour rire', ', si on demande gentiment',
+      ", et c'est un secret", ', mais seulement pendant les grandes vacances', ', selon Mamie', ', tous les mardis',
+      ", mais seulement à l'heure du coucher", ", et c'est trop génial", ", et c'est la vérité", ', avec plein de paillettes'],
     join: EVERYDAY.join,
     joinPrefix: EVERYDAY.joinPrefix,
     mixPos: EVERYDAY.mixPos,
@@ -712,6 +752,7 @@
       : /[sx]$/.test(t) && t.length > 3 ? t.slice(0, -1) : t),
     tokens: s => s.toLowerCase().match(/[a-zàâäçéèêëîïôöùûüÿœæ]+/g) || [],
     describe, example, fill, everyday: EVERYDAY, children: CHILDREN,
+    wordRow: ([w, g, pl, cat, kid]) => (cat ? { w, x: { ...np(g === 'f' ? 'la' : 'le', w, g), pls: pl || undefined }, cat, kid: kid === '1' } : null),
     plural: w => (w.endsWith('aux') ? w.slice(0, -3) + 'al' : /[^s][sx]$/.test(w) ? w.slice(0, -1) : ''),
     inflected: (w, v) => (/[sx]$/.test(w) && v.has(w.slice(0, -1))) || (w.endsWith('e') && v.has(w.slice(0, -1)))
       || (w.endsWith('es') && v.has(w.slice(0, -2))),
